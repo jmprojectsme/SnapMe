@@ -1,6 +1,5 @@
 // ================================
-// SnapMe PH - app.js
-// Philippine Phone Photography
+// SnapMe PH - app.js v1.2
 // ================================
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -11,6 +10,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let currentUser = null
 let currentProfile = null
+let currentExploreSort = 'newest'
 
 // ================================
 // UTILS
@@ -24,7 +24,9 @@ function showToast(msg, type = '') {
 }
 
 function timeAgo(dateStr) {
-  const diff = (Date.now() - new Date(dateStr)) / 1000
+  const now = new Date()
+  const posted = new Date(dateStr)
+  const diff = (now - posted) / 1000
   if (diff < 60)    return 'just now'
   if (diff < 3600)  return Math.floor(diff / 60) + 'm ago'
   if (diff < 86400) return Math.floor(diff / 3600) + 'h ago'
@@ -34,6 +36,59 @@ function timeAgo(dateStr) {
 function getInitials(name) {
   if (!name) return 'SN'
   return name.substring(0, 2).toUpperCase()
+}
+
+// ================================
+// IMAGE COMPRESSION
+// ================================
+
+function compressImage(file, maxWidth = 1920, quality = 0.82) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: 'image/jpeg' }))
+        }, 'image/jpeg', quality)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+// ================================
+// DRAWER
+// ================================
+
+window.openDrawer = function() {
+  document.getElementById('settings-drawer').classList.add('open')
+  document.getElementById('drawer-overlay').classList.add('open')
+}
+
+window.closeDrawer = function() {
+  document.getElementById('settings-drawer').classList.remove('open')
+  document.getElementById('drawer-overlay').classList.remove('open')
+}
+
+window.showGuidelinesFromDrawer = function() {
+  document.getElementById('guidelines-screen').style.display = 'flex'
+  document.getElementById('app').style.display = 'none'
 }
 
 // ================================
@@ -65,11 +120,7 @@ async function initAuth() {
 
 async function loadCurrentProfile() {
   if (!currentUser) return
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', currentUser.id)
-    .single()
+  const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single()
   currentProfile = data
 }
 
@@ -91,6 +142,7 @@ function showApp() {
 
   loadFeed()
   updateNavProfile()
+  updateDrawerProfile()
 }
 
 function showAuthScreen() {
@@ -112,9 +164,17 @@ function showSetupScreen() {
 
 function updateNavProfile() {
   const avatar = document.getElementById('navAvatar')
-  if (avatar && currentProfile) {
-    avatar.textContent = getInitials(currentProfile.username)
-  }
+  if (avatar && currentProfile) avatar.textContent = getInitials(currentProfile.username)
+}
+
+function updateDrawerProfile() {
+  if (!currentProfile || !currentUser) return
+  const el = document.getElementById('drawerAvatar')
+  const un = document.getElementById('drawerUsername')
+  const em = document.getElementById('drawerEmail')
+  if (el) el.textContent = getInitials(currentProfile.username)
+  if (un) un.textContent = '@' + currentProfile.username
+  if (em) em.textContent = currentUser.email
 }
 
 // ================================
@@ -141,15 +201,10 @@ window.doLogin = async function() {
   if (!email || !password) { showToast('Please fill in all fields', 'error'); return }
 
   const btn = document.getElementById('login-btn')
-  btn.disabled = true
-  btn.textContent = 'Signing in...'
+  btn.disabled = true; btn.textContent = 'Signing in...'
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) {
-    showToast(error.message, 'error')
-    btn.disabled = false
-    btn.textContent = 'Sign In'
-  }
+  if (error) { showToast(error.message, 'error'); btn.disabled = false; btn.textContent = 'Sign In' }
 }
 
 window.doSignup = async function() {
@@ -162,23 +217,21 @@ window.doSignup = async function() {
   if (password.length < 6)  { showToast('Password must be at least 6 characters', 'error'); return }
 
   const btn = document.getElementById('signup-btn')
-  btn.disabled = true
-  btn.textContent = 'Creating account...'
+  btn.disabled = true; btn.textContent = 'Creating account...'
 
   const { error } = await supabase.auth.signUp({ email, password })
   if (error) {
     showToast(error.message, 'error')
-    btn.disabled = false
-    btn.textContent = 'Create Account'
+    btn.disabled = false; btn.textContent = 'Create Account'
   } else {
     showToast('Account created! Check your email to confirm.', 'success')
-    btn.disabled = false
-    btn.textContent = 'Create Account'
+    btn.disabled = false; btn.textContent = 'Create Account'
     showLogin()
   }
 }
 
 window.doLogout = async function() {
+  closeDrawer()
   await supabase.auth.signOut()
   showToast('Signed out!', 'success')
 }
@@ -196,28 +249,20 @@ window.doSetupProfile = async function() {
   if (!/^[a-zA-Z0-9_.]+$/.test(username)) { showToast('Username: letters, numbers, _ and . only', 'error'); return }
 
   const btn = document.getElementById('setup-btn')
-  btn.disabled = true
-  btn.textContent = 'Saving...'
+  btn.disabled = true; btn.textContent = 'Saving...'
 
-  const { error } = await supabase.from('profiles').upsert({
-    id: currentUser.id,
-    username,
-    bio: bio || null
-  })
+  const { error } = await supabase.from('profiles').upsert({ id: currentUser.id, username, bio: bio || null })
 
   if (error) {
     showToast(error.message.includes('unique') ? 'Username already taken!' : error.message, 'error')
-    btn.disabled = false
-    btn.textContent = 'Save Profile'
+    btn.disabled = false; btn.textContent = 'Save Profile'
     return
   }
 
   currentProfile = { id: currentUser.id, username, bio }
   showToast('Profile created! Welcome to SnapMe PH 🎉', 'success')
   setTimeout(() => showGuidelinesScreen(), 1000)
-
-  btn.disabled = false
-  btn.textContent = 'Save Profile'
+  btn.disabled = false; btn.textContent = 'Save Profile'
 }
 
 // ================================
@@ -230,6 +275,7 @@ window.acceptGuidelines = function() {
   document.getElementById('app').style.display = 'flex'
   loadFeed()
   updateNavProfile()
+  updateDrawerProfile()
 }
 
 // ================================
@@ -242,7 +288,7 @@ window.showPage = function(name, tabEl) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
   if (tabEl) tabEl.classList.add('active')
   if (name === 'feed')     loadFeed()
-  if (name === 'explore')  loadExplore()
+  if (name === 'explore')  loadExplore(currentExploreSort)
   if (name === 'profile')  loadProfile()
   if (name === 'activity') loadActivity()
 }
@@ -260,15 +306,8 @@ async function loadFeed() {
     .select('*')
     .order('created_at', { ascending: false })
 
-  if (error) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Could not load photos.</p></div>'
-    return
-  }
-
-  if (!data.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">📷</div><p>No photos yet.<br>Be the first to share one!</p></div>'
-    return
-  }
+  if (error) { container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Could not load photos.</p></div>'; return }
+  if (!data.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">📷</div><p>No photos yet.<br>Be the first to share one!</p></div>'; return }
 
   container.innerHTML = data.map(post => renderCard(post)).join('')
 }
@@ -280,7 +319,7 @@ function renderCard(post) {
   const username = post.username || 'snapme user'
   const isOwner  = currentUser && post.user_id === currentUser.id
 
-  const stars = [1, 2, 3, 4, 5].map(n =>
+  const stars = [1,2,3,4,5].map(n =>
     `<button class="star-btn ${myRating >= n ? 'filled' : ''}" onclick="ratePost('${post.id}', ${n})" data-post="${post.id}" data-star="${n}">★</button>`
   ).join('')
 
@@ -294,7 +333,10 @@ function renderCard(post) {
           <div class="user-time">${timeAgo(post.created_at)}</div>
         </div>
       </div>
-      ${isOwner ? `<button class="delete-btn" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
+      <div class="card-meta">
+        ${post.category ? `<span class="category-tag">${post.category}</span>` : ''}
+        ${isOwner ? `<button class="delete-btn" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
+      </div>
     </div>
     <div class="card-photo">
       <img src="${post.image_url}" alt="photo" loading="lazy">
@@ -318,7 +360,7 @@ function renderCard(post) {
 }
 
 // ================================
-// DELETE POST
+// DELETE
 // ================================
 
 window.deletePost = async function(id) {
@@ -332,15 +374,8 @@ window.deletePost = async function(id) {
 // LIKES
 // ================================
 
-function getLiked(id) {
-  return JSON.parse(localStorage.getItem('liked') || '{}')[id] || false
-}
-
-function setLiked(id, val) {
-  const l = JSON.parse(localStorage.getItem('liked') || '{}')
-  l[id] = val
-  localStorage.setItem('liked', JSON.stringify(l))
-}
+function getLiked(id) { return JSON.parse(localStorage.getItem('liked') || '{}')[id] || false }
+function setLiked(id, val) { const l = JSON.parse(localStorage.getItem('liked') || '{}'); l[id] = val; localStorage.setItem('liked', JSON.stringify(l)) }
 
 window.likePost = async function(id) {
   if (!currentUser) { showToast('Sign in to like photos', 'error'); return }
@@ -348,8 +383,7 @@ window.likePost = async function(id) {
   const btn      = document.getElementById('like-btn-' + id)
   const countEl  = document.getElementById('like-count-' + id)
   const newLiked = !liked
-  const delta    = newLiked ? 1 : -1
-  const newCount = parseInt(countEl.textContent) + delta
+  const newCount = parseInt(countEl.textContent) + (newLiked ? 1 : -1)
 
   setLiked(id, newLiked)
   countEl.textContent = newCount
@@ -362,15 +396,8 @@ window.likePost = async function(id) {
 // RATINGS
 // ================================
 
-function getMyRating(id) {
-  return JSON.parse(localStorage.getItem('ratings') || '{}')[id] || 0
-}
-
-function setMyRating(id, val) {
-  const r = JSON.parse(localStorage.getItem('ratings') || '{}')
-  r[id] = val
-  localStorage.setItem('ratings', JSON.stringify(r))
-}
+function getMyRating(id) { return JSON.parse(localStorage.getItem('ratings') || '{}')[id] || 0 }
+function setMyRating(id, val) { const r = JSON.parse(localStorage.getItem('ratings') || '{}'); r[id] = val; localStorage.setItem('ratings', JSON.stringify(r)) }
 
 window.ratePost = async function(id, score) {
   if (!currentUser) { showToast('Sign in to rate photos', 'error'); return }
@@ -394,17 +421,13 @@ window.ratePost = async function(id, score) {
   const card = document.getElementById('card-' + id)
   if (card) {
     let badge = card.querySelector('.score-badge')
-    if (!badge) {
-      badge = document.createElement('div')
-      badge.className = 'score-badge'
-      card.querySelector('.card-photo').appendChild(badge)
-    }
+    if (!badge) { badge = document.createElement('div'); badge.className = 'score-badge'; card.querySelector('.card-photo').appendChild(badge) }
     badge.innerHTML = `★ ${avg} <span style="color:var(--text-dim);font-size:0.7rem">(${newCount})</span>`
   }
 }
 
 // ================================
-// UPLOAD
+// UPLOAD WITH COMPRESSION
 // ================================
 
 let selectedFile = null
@@ -428,22 +451,25 @@ window.uploadPost = async function() {
   if (!selectedFile) { showToast('Please select a photo first', 'error'); return }
 
   const btn = document.getElementById('submitBtn')
-  btn.disabled = true
-  btn.textContent = 'Uploading...'
+  btn.disabled = true; btn.textContent = 'Compressing...'
 
   try {
-    const ext      = selectedFile.name.split('.').pop()
-    const filename = `photo_${Date.now()}.${ext}`
+    // Compress image before upload
+    const compressed = await compressImage(selectedFile)
+    btn.textContent = 'Uploading...'
 
-    const { error: uploadError } = await supabase.storage.from('photos').upload(filename, selectedFile)
+    const filename = `photo_${Date.now()}.jpg`
+    const { error: uploadError } = await supabase.storage.from('photos').upload(filename, compressed)
     if (uploadError) throw uploadError
 
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(filename)
-    const caption = document.getElementById('captionInput').value.trim()
+    const caption  = document.getElementById('captionInput').value.trim()
+    const category = document.getElementById('categorySelect').value
 
     const { error: insertError } = await supabase.from('posts').insert({
       image_url: urlData.publicUrl,
       caption,
+      category: category || null,
       user_id: currentUser.id,
       username: currentProfile?.username || 'snapme user'
     })
@@ -451,8 +477,9 @@ window.uploadPost = async function() {
 
     showToast('Photo shared! 🎉', 'success')
     selectedFile = null
-    document.getElementById('fileInput').value    = ''
-    document.getElementById('captionInput').value = ''
+    document.getElementById('fileInput').value      = ''
+    document.getElementById('captionInput').value   = ''
+    document.getElementById('categorySelect').value = ''
     document.getElementById('uploadZone').innerHTML = `
       <div class="upload-zone-text">
         <div class="upload-icon">📷</div>
@@ -465,26 +492,44 @@ window.uploadPost = async function() {
     showToast('Upload failed: ' + err.message, 'error')
   }
 
-  btn.disabled = false
-  btn.textContent = 'Share Photo'
+  btn.disabled = false; btn.textContent = 'Share Photo'
 }
 
 // ================================
-// EXPLORE
+// EXPLORE WITH SORTING
 // ================================
 
-async function loadExplore() {
-  const grid = document.getElementById('exploreGrid')
-  grid.innerHTML = '<div class="loading"><span class="spinner"></span></div>'
+window.sortExplore = function(sort, tabEl) {
+  currentExploreSort = sort
+  document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'))
+  if (tabEl) tabEl.classList.add('active')
+  loadExplore(sort)
+}
 
-  const { data } = await supabase.from('posts').select('*').order('likes', { ascending: false })
+async function loadExplore(sort = 'newest') {
+  const grid = document.getElementById('exploreGrid')
+  grid.innerHTML = '<div class="loading" style="grid-column:span 3"><span class="spinner"></span></div>'
+
+  let query = supabase.from('posts').select('*')
+
+  if (sort === 'newest')  query = query.order('created_at', { ascending: false })
+  if (sort === 'liked')   query = query.order('likes', { ascending: false })
+  if (sort === 'rated')   query = query.order('vote_count', { ascending: false })
+
+  const { data } = await query
 
   if (!data || !data.length) {
     grid.innerHTML = '<div class="empty" style="grid-column:span 3"><p>No photos yet</p></div>'
     return
   }
 
-  grid.innerHTML = data.map(post => {
+  // For top rated sort by avg score
+  let sorted = data
+  if (sort === 'rated') {
+    sorted = data.filter(p => p.vote_count > 0).sort((a, b) => (b.total_score / b.vote_count) - (a.total_score / a.vote_count))
+  }
+
+  grid.innerHTML = sorted.map(post => {
     const avg = post.vote_count > 0 ? (post.total_score / post.vote_count).toFixed(1) : ''
     return `
     <div class="grid-item" onclick="showPage('feed', document.querySelector('.nav-tab'))">
@@ -495,28 +540,22 @@ async function loadExplore() {
 }
 
 // ================================
-// PROFILE PAGE
+// PROFILE
 // ================================
 
 async function loadProfile() {
   if (!currentUser || !currentProfile) return
 
   document.getElementById('profileName').textContent     = currentProfile.username
-  document.getElementById('profileBio').textContent      = currentProfile.bio || 'No bio yet'
+  document.getElementById('profileBio').textContent      = currentProfile.bio || ''
   document.getElementById('profileInitials').textContent = getInitials(currentProfile.username)
   document.getElementById('profileEmail').textContent    = currentUser.email
 
-  const { data } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false })
-
+  const { data } = await supabase.from('posts').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
   if (!data) return
 
   document.getElementById('profilePostCount').textContent = data.length
-  const totalLikes = data.reduce((s, p) => s + (p.likes || 0), 0)
-  document.getElementById('profileLikeCount').textContent = totalLikes
+  document.getElementById('profileLikeCount').textContent = data.reduce((s, p) => s + (p.likes || 0), 0)
 
   const rated = data.filter(p => p.vote_count > 0)
   if (rated.length) {
@@ -535,15 +574,10 @@ async function loadProfile() {
 
 async function loadActivity() {
   const list = document.getElementById('activityList')
-
-  const { data } = await supabase
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(20)
+  const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(20)
 
   if (!data || !data.length) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><p>No activity yet.<br>Start uploading photos!</p></div>'
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><p>No activity yet.</p></div>'
     return
   }
 
@@ -551,9 +585,9 @@ async function loadActivity() {
     <div class="activity-item">
       <img class="activity-thumb" src="${post.image_url}" loading="lazy">
       <div class="activity-info">
-        <p><strong>${post.username || 'snapme user'}</strong> shared a photo</p>
+        <p><strong>${post.username || 'snapme user'}</strong> shared a photo${post.category ? ` · ${post.category}` : ''}</p>
         ${post.likes > 0 ? `<p>❤️ ${post.likes} like${post.likes !== 1 ? 's' : ''}</p>` : ''}
-        ${post.vote_count > 0 ? `<p>★ Rated ${(post.total_score / post.vote_count).toFixed(1)} by ${post.vote_count} user${post.vote_count !== 1 ? 's' : ''}</p>` : ''}
+        ${post.vote_count > 0 ? `<p>★ Rated ${(post.total_score/post.vote_count).toFixed(1)} by ${post.vote_count} user${post.vote_count !== 1 ? 's' : ''}</p>` : ''}
         <div class="activity-time">${timeAgo(post.created_at)}</div>
       </div>
     </div>`).join('')

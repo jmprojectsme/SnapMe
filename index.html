@@ -16,28 +16,21 @@
 </head>
 <body>
 
-<!-- ================================
-     AUTH SCREEN
-================================ -->
+<!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">Snap<span>Me</span></div>
-    <div class="auth-tagline">A sanctuary for your shots 📷</div>
-
+    <div class="auth-tagline">shot on phone. felt in frame. 📷</div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="auth-tab-login" onclick="showLogin()">Sign In</button>
       <button class="auth-tab" id="auth-tab-signup" onclick="showSignup()">Sign Up</button>
     </div>
-
-    <!-- LOGIN FORM -->
     <div id="login-form">
       <input class="auth-input" id="login-email" type="email" placeholder="Email address">
       <input class="auth-input" id="login-password" type="password" placeholder="Password">
       <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In</button>
       <p class="auth-switch">Don't have an account? <span onclick="showSignup()">Sign up</span></p>
     </div>
-
-    <!-- SIGNUP FORM -->
     <div id="signup-form" style="display:none">
       <input class="auth-input" id="signup-email" type="email" placeholder="Email address">
       <input class="auth-input" id="signup-password" type="password" placeholder="Password (min 6 characters)">
@@ -48,92 +41,75 @@
   </div>
 </div>
 
-<!-- ================================
-     PROFILE SETUP SCREEN
-================================ -->
+<!-- PROFILE SETUP -->
 <div id="setup-screen" style="display:none">
   <div class="auth-box">
     <div class="auth-logo">Snap<span>Me</span></div>
     <div class="setup-title">Create Your Profile</div>
     <div class="setup-sub">Choose a username to get started</div>
-
     <div class="setup-avatar">📷</div>
-
     <input class="auth-input" id="setup-username" type="text" placeholder="Username (e.g. jaymar_ph)" maxlength="30">
     <textarea class="auth-input auth-textarea" id="setup-bio" placeholder="Short bio (optional)" rows="3" maxlength="150"></textarea>
     <button class="auth-btn" id="setup-btn" onclick="doSetupProfile()">Save Profile</button>
   </div>
 </div>
 
-<!-- ================================
-     COMMUNITY GUIDELINES SCREEN
-================================ -->
+<!-- COMMUNITY GUIDELINES -->
 <div id="guidelines-screen" style="display:none">
   <div class="guidelines-box">
     <div class="guidelines-logo">Snap<span>Me</span></div>
     <div class="guidelines-title">Community Guidelines</div>
     <div class="guidelines-sub">Please read before joining our community</div>
-
     <div class="guidelines-list">
-      <div class="guideline-item">
-        <div class="guideline-icon">📷</div>
-        <div class="guideline-text">
-          <strong>Photography Only</strong>
-          Only upload your own original photos. No screenshots, memes, or copied content.
-        </div>
-      </div>
-      <div class="guideline-item">
-        <div class="guideline-icon">🚫</div>
-        <div class="guideline-text">
-          <strong>No Inappropriate Content</strong>
-          No nudity, violence, hate speech, or harmful content of any kind.
-        </div>
-      </div>
-      <div class="guideline-item">
-        <div class="guideline-icon">🤝</div>
-        <div class="guideline-text">
-          <strong>Be Respectful</strong>
-          Treat every photographer with respect. Constructive feedback only.
-        </div>
-      </div>
-      <div class="guideline-item">
-        <div class="guideline-icon">⭐</div>
-        <div class="guideline-text">
-          <strong>Rate Honestly</strong>
-          Rate photos based on quality and creativity. No spam rating.
-        </div>
-      </div>
-      <div class="guideline-item">
-        <div class="guideline-icon">📱</div>
-        <div class="guideline-text">
-          <strong>Phone Photography Welcome</strong>
-          All cameras welcome — phone, DSLR, mirrorless. Art is art.
-        </div>
-      </div>
-      <div class="guideline-item">
-        <div class="guideline-icon">🇵🇭</div>
-        <div class="guideline-text">
-          <strong>Community First</strong>
-          This is a safe space for Filipino photographers. Keep it clean and inspiring.
-        </div>
-      </div>
+      <div class="guideline-item"><div class="guideline-icon">📷</div><div class="guideline-text"><strong>Photography Only</strong>Only upload your own original photos. No screenshots, memes, or copied content.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🚫</div><div class="guideline-text"><strong>No Inappropriate Content</strong>No nudity, violence, hate speech, or harmful content of any kind.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🤝</div><div class="guideline-text"><strong>Be Respectful</strong>Treat every photographer with respect. Constructive feedback only.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">⭐</div><div class="guideline-text"><strong>Rate Honestly</strong>Rate photos based on quality and creativity. No spam rating.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">📱</div><div class="guideline-text"><strong>All Cameras Welcome</strong>Phone, DSLR, mirrorless — art is art.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🇵🇭</div><div class="guideline-text"><strong>Community First</strong>A safe space for photographers. Keep it clean and inspiring.</div></div>
     </div>
-
     <p class="guidelines-note">Violation of these rules may result in account removal.</p>
-
     <button class="auth-btn" onclick="acceptGuidelines()">I Agree — Enter SnapMe PH</button>
   </div>
 </div>
 
-<!-- ================================
-     MAIN APP
-================================ -->
+<!-- SETTINGS DRAWER OVERLAY -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- SETTINGS DRAWER -->
+<div id="settings-drawer">
+  <div class="drawer-profile">
+    <div class="drawer-avatar" id="drawerAvatar">SN</div>
+    <div>
+      <div class="drawer-username" id="drawerUsername">username</div>
+      <div class="drawer-email" id="drawerEmail">email</div>
+    </div>
+  </div>
+  <div class="drawer-divider"></div>
+  <div class="drawer-item" onclick="closeDrawer(); showPage('profile', null)">
+    <span class="drawer-icon">👤</span> My Profile
+  </div>
+  <div class="drawer-item" onclick="closeDrawer(); showGuidelinesFromDrawer()">
+    <span class="drawer-icon">📋</span> Community Guidelines
+  </div>
+  <div class="drawer-item" onclick="closeDrawer()">
+    <span class="drawer-icon">🔒</span> Privacy & Safety
+  </div>
+  <div class="drawer-divider"></div>
+  <div class="drawer-item danger" onclick="doLogout()">
+    <span class="drawer-icon">🚪</span> Sign Out
+  </div>
+  <div class="drawer-divider"></div>
+  <div class="drawer-version">SnapMe PH v1.2 🇵🇭</div>
+</div>
+
+<!-- MAIN APP -->
 <div id="app" style="display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh">
 
   <!-- NAV -->
   <nav>
     <div class="logo">Snap<span>Me</span></div>
-    <div id="navAvatar" class="nav-avatar">SN</div>
+    <div id="navAvatar" class="nav-avatar" onclick="openDrawer()">SN</div>
   </nav>
 
   <!-- FEED PAGE -->
@@ -153,7 +129,20 @@
           <div class="upload-hint">Tap to choose a photo</div>
         </div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" capture="environment">
+      <input type="file" id="fileInput" accept="image/*">
+      <select class="category-select" id="categorySelect">
+        <option value="">Select a category...</option>
+        <option value="Phone Photography">📱 Phone Photography</option>
+        <option value="Landscape">🌅 Landscape</option>
+        <option value="Street">🏙️ Street</option>
+        <option value="Portrait">👤 Portrait</option>
+        <option value="Nature">🌿 Nature</option>
+        <option value="Events">🎉 Events</option>
+        <option value="Food">🍜 Food</option>
+        <option value="Architecture">🏛️ Architecture</option>
+        <option value="Night">🌃 Night</option>
+        <option value="Travel">✈️ Travel</option>
+      </select>
       <textarea class="caption-input" id="captionInput" rows="3" placeholder="Write a caption..."></textarea>
       <button class="submit-btn" id="submitBtn" onclick="uploadPost()">Share Photo</button>
     </div>
@@ -163,6 +152,11 @@
   <div class="page" id="page-explore">
     <div class="explore-page">
       <h2>Explore</h2>
+      <div class="sort-tabs">
+        <button class="sort-tab active" onclick="sortExplore('newest', this)">Newest</button>
+        <button class="sort-tab" onclick="sortExplore('liked', this)">Most Liked</button>
+        <button class="sort-tab" onclick="sortExplore('rated', this)">Top Rated</button>
+      </div>
       <div class="grid" id="exploreGrid">
         <div class="loading"><span class="spinner"></span></div>
       </div>
@@ -192,7 +186,6 @@
           <div class="stat"><div class="stat-num" id="profileLikeCount">0</div><div class="stat-label">Likes</div></div>
           <div class="stat"><div class="stat-num" id="profileAvgScore">—</div><div class="stat-label">Avg Score</div></div>
         </div>
-        <button class="logout-btn" onclick="doLogout()">Sign Out</button>
       </div>
       <div class="profile-grid" id="profileGrid"></div>
     </div>
