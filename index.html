@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SnapMe</title>
-
-<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#c9a84c">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,110 +11,222 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SnapMe">
 <link rel="apple-touch-icon" href="icon-512.png">
-
-<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
-<!-- Styles -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="logo">Snap<span>Me</span></div>
-  <div style="font-size:0.75rem;color:var(--text-dim)">community</div>
-</nav>
+<!-- ================================
+     AUTH SCREEN
+================================ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Snap<span>Me</span></div>
+    <div class="auth-tagline">A sanctuary for your shots 📷</div>
 
-<!-- FEED PAGE -->
-<div class="page active" id="page-feed">
-  <div class="feed" id="feedContainer">
-    <div class="loading"><span class="spinner"></span>Loading photos...</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" onclick="showLogin()">Sign In</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="showSignup()">Sign Up</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form">
+      <input class="auth-input" id="login-email" type="email" placeholder="Email address">
+      <input class="auth-input" id="login-password" type="password" placeholder="Password">
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+      <p class="auth-switch">Don't have an account? <span onclick="showSignup()">Sign up</span></p>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signup-form" style="display:none">
+      <input class="auth-input" id="signup-email" type="email" placeholder="Email address">
+      <input class="auth-input" id="signup-password" type="password" placeholder="Password (min 6 characters)">
+      <input class="auth-input" id="signup-confirm" type="password" placeholder="Confirm password">
+      <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+      <p class="auth-switch">Already have an account? <span onclick="showLogin()">Sign in</span></p>
+    </div>
   </div>
 </div>
 
-<!-- UPLOAD PAGE -->
-<div class="page" id="page-upload">
-  <div class="upload-page">
-    <h2>Share a Photo</h2>
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-      <div class="upload-zone-text" id="uploadZoneText">
-        <div class="upload-icon">📷</div>
-        <div class="upload-hint">Tap to choose a photo</div>
+<!-- ================================
+     PROFILE SETUP SCREEN
+================================ -->
+<div id="setup-screen" style="display:none">
+  <div class="auth-box">
+    <div class="auth-logo">Snap<span>Me</span></div>
+    <div class="setup-title">Create Your Profile</div>
+    <div class="setup-sub">Choose a username to get started</div>
+
+    <div class="setup-avatar">📷</div>
+
+    <input class="auth-input" id="setup-username" type="text" placeholder="Username (e.g. jaymar_ph)" maxlength="30">
+    <textarea class="auth-input auth-textarea" id="setup-bio" placeholder="Short bio (optional)" rows="3" maxlength="150"></textarea>
+    <button class="auth-btn" id="setup-btn" onclick="doSetupProfile()">Save Profile</button>
+  </div>
+</div>
+
+<!-- ================================
+     COMMUNITY GUIDELINES SCREEN
+================================ -->
+<div id="guidelines-screen" style="display:none">
+  <div class="guidelines-box">
+    <div class="guidelines-logo">Snap<span>Me</span></div>
+    <div class="guidelines-title">Community Guidelines</div>
+    <div class="guidelines-sub">Please read before joining our community</div>
+
+    <div class="guidelines-list">
+      <div class="guideline-item">
+        <div class="guideline-icon">📷</div>
+        <div class="guideline-text">
+          <strong>Photography Only</strong>
+          Only upload your own original photos. No screenshots, memes, or copied content.
+        </div>
+      </div>
+      <div class="guideline-item">
+        <div class="guideline-icon">🚫</div>
+        <div class="guideline-text">
+          <strong>No Inappropriate Content</strong>
+          No nudity, violence, hate speech, or harmful content of any kind.
+        </div>
+      </div>
+      <div class="guideline-item">
+        <div class="guideline-icon">🤝</div>
+        <div class="guideline-text">
+          <strong>Be Respectful</strong>
+          Treat every photographer with respect. Constructive feedback only.
+        </div>
+      </div>
+      <div class="guideline-item">
+        <div class="guideline-icon">⭐</div>
+        <div class="guideline-text">
+          <strong>Rate Honestly</strong>
+          Rate photos based on quality and creativity. No spam rating.
+        </div>
+      </div>
+      <div class="guideline-item">
+        <div class="guideline-icon">📱</div>
+        <div class="guideline-text">
+          <strong>Phone Photography Welcome</strong>
+          All cameras welcome — phone, DSLR, mirrorless. Art is art.
+        </div>
+      </div>
+      <div class="guideline-item">
+        <div class="guideline-icon">🇵🇭</div>
+        <div class="guideline-text">
+          <strong>Community First</strong>
+          This is a safe space for Filipino photographers. Keep it clean and inspiring.
+        </div>
       </div>
     </div>
-    <input type="file" id="fileInput" accept="image/*">
-    <textarea class="caption-input" id="captionInput" rows="3" placeholder="Write a caption..."></textarea>
-    <button class="submit-btn" id="submitBtn" onclick="uploadPost()">Share Photo</button>
+
+    <p class="guidelines-note">Violation of these rules may result in account removal.</p>
+
+    <button class="auth-btn" onclick="acceptGuidelines()">I Agree — Enter SnapMe PH</button>
   </div>
 </div>
 
-<!-- EXPLORE PAGE -->
-<div class="page" id="page-explore">
-  <div class="explore-page">
-    <h2>Explore</h2>
-    <div class="grid" id="exploreGrid">
-      <div class="loading"><span class="spinner"></span></div>
+<!-- ================================
+     MAIN APP
+================================ -->
+<div id="app" style="display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh">
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Snap<span>Me</span></div>
+    <div id="navAvatar" class="nav-avatar">SN</div>
+  </nav>
+
+  <!-- FEED PAGE -->
+  <div class="page active" id="page-feed">
+    <div class="feed" id="feedContainer">
+      <div class="loading"><span class="spinner"></span>Loading photos...</div>
     </div>
   </div>
-</div>
 
-<!-- ACTIVITY PAGE -->
-<div class="page" id="page-activity">
-  <div class="upload-page">
-    <h2>Activity</h2>
-    <div id="activityList">
-      <div class="loading"><span class="spinner"></span>Loading...</div>
+  <!-- UPLOAD PAGE -->
+  <div class="page" id="page-upload">
+    <div class="upload-page">
+      <h2>Share a Photo</h2>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-zone-text">
+          <div class="upload-icon">📷</div>
+          <div class="upload-hint">Tap to choose a photo</div>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" capture="environment">
+      <textarea class="caption-input" id="captionInput" rows="3" placeholder="Write a caption..."></textarea>
+      <button class="submit-btn" id="submitBtn" onclick="uploadPost()">Share Photo</button>
     </div>
   </div>
-</div>
 
-<!-- PROFILE PAGE -->
-<div class="page" id="page-profile">
-  <div class="profile-page">
-    <div class="profile-header">
-      <div class="profile-avatar">📷</div>
-      <div class="profile-name">My Photos</div>
-      <div class="profile-stats">
-        <div class="stat"><div class="stat-num" id="profilePostCount">0</div><div class="stat-label">Posts</div></div>
-        <div class="stat"><div class="stat-num" id="profileLikeCount">0</div><div class="stat-label">Likes</div></div>
-        <div class="stat"><div class="stat-num" id="profileAvgScore">—</div><div class="stat-label">Avg Score</div></div>
+  <!-- EXPLORE PAGE -->
+  <div class="page" id="page-explore">
+    <div class="explore-page">
+      <h2>Explore</h2>
+      <div class="grid" id="exploreGrid">
+        <div class="loading"><span class="spinner"></span></div>
       </div>
     </div>
-    <div class="profile-grid" id="profileGrid"></div>
   </div>
-</div>
 
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <div class="nav-tab active" onclick="showPage('feed', this)">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-    <span class="nav-tab-label">Home</span>
-  </div>
-  <div class="nav-tab" onclick="showPage('explore', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <span class="nav-tab-label">Explore</span>
-  </div>
-  <div class="upload-tab" onclick="showPage('upload', null)">
-    <div class="upload-circle">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  <!-- ACTIVITY PAGE -->
+  <div class="page" id="page-activity">
+    <div class="upload-page">
+      <h2>Activity</h2>
+      <div id="activityList">
+        <div class="loading"><span class="spinner"></span>Loading...</div>
+      </div>
     </div>
-    <span class="nav-tab-label" style="font-size:0.62rem;color:var(--text-dim);margin-top:2px">Upload</span>
   </div>
-  <div class="nav-tab" onclick="showPage('activity', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-    <span class="nav-tab-label">Activity</span>
+
+  <!-- PROFILE PAGE -->
+  <div class="page" id="page-profile">
+    <div class="profile-page">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profileInitials">📷</div>
+        <div class="profile-name" id="profileName">My Profile</div>
+        <div class="profile-email" id="profileEmail"></div>
+        <div class="profile-bio-text" id="profileBio"></div>
+        <div class="profile-stats">
+          <div class="stat"><div class="stat-num" id="profilePostCount">0</div><div class="stat-label">Posts</div></div>
+          <div class="stat"><div class="stat-num" id="profileLikeCount">0</div><div class="stat-label">Likes</div></div>
+          <div class="stat"><div class="stat-num" id="profileAvgScore">—</div><div class="stat-label">Avg Score</div></div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+      </div>
+      <div class="profile-grid" id="profileGrid"></div>
+    </div>
   </div>
-  <div class="nav-tab" onclick="showPage('profile', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    <span class="nav-tab-label">Profile</span>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-tab active" onclick="showPage('feed', this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="nav-tab-label">Home</span>
+    </div>
+    <div class="nav-tab" onclick="showPage('explore', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="nav-tab-label">Explore</span>
+    </div>
+    <div class="upload-tab" onclick="showPage('upload', null)">
+      <div class="upload-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <span class="nav-tab-label" style="font-size:0.62rem;color:var(--text-dim);margin-top:2px">Upload</span>
+    </div>
+    <div class="nav-tab" onclick="showPage('activity', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <span class="nav-tab-label">Activity</span>
+    </div>
+    <div class="nav-tab" onclick="showPage('profile', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-tab-label">Profile</span>
+    </div>
   </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
-
-<!-- JS -->
 <script src="app.js" type="module"></script>
-
 </body>
 </html>
