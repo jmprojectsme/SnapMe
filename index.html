@@ -100,7 +100,20 @@
     <span class="drawer-icon">🚪</span> Sign Out
   </div>
   <div class="drawer-divider"></div>
-  <div class="drawer-version">SnapMe PH v1.2 🇵🇭</div>
+  <div class="drawer-version">SnapMe PH v1.3 🇵🇭</div>
+</div>
+
+<!-- SLIDE VIEWER -->
+<div id="slide-viewer" onclick="closeSlideViewer()">
+  <div class="slide-viewer-header">
+    <div class="slide-viewer-user">
+      <div class="slide-viewer-avatar" id="slideViewerAvatar">SN</div>
+      <div class="slide-viewer-username" id="slideViewerUsername">username</div>
+    </div>
+    <div class="slide-viewer-close">✕</div>
+  </div>
+  <div class="slide-viewer-photos" id="slideViewerPhotos" onclick="event.stopPropagation()"></div>
+  <div class="slide-viewer-dots" id="slideViewerDots"></div>
 </div>
 
 <!-- MAIN APP -->
@@ -109,11 +122,26 @@
   <!-- NAV -->
   <nav>
     <div class="logo">Snap<span>Me</span></div>
-    <div id="navAvatar" class="nav-avatar" onclick="openDrawer()">SN</div>
+    <div class="nav-right">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div id="navAvatar" class="nav-avatar" onclick="openDrawer()">SN</div>
+    </div>
   </nav>
 
   <!-- FEED PAGE -->
   <div class="page active" id="page-feed">
+
+    <!-- SLIDES ROW -->
+    <div class="slides-row" id="slidesRow">
+      <div class="slide-item" id="mySlide" onclick="handleMySlide()">
+        <div class="slide-square slide-add">
+          <div class="slide-add-icon">+</div>
+        </div>
+        <div class="slide-label">Your Slide</div>
+      </div>
+    </div>
+
+    <!-- FEED -->
     <div class="feed" id="feedContainer">
       <div class="loading"><span class="spinner"></span>Loading photos...</div>
     </div>
