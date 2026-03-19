@@ -13,6 +13,8 @@
 <link rel="apple-touch-icon" href="icon-512.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<!-- EXIF JS Library -->
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 </head>
 <body>
 
@@ -29,6 +31,7 @@
       <input class="auth-input" id="login-email" type="email" placeholder="Email address">
       <input class="auth-input" id="login-password" type="password" placeholder="Password">
       <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+      <button class="auth-btn-ghost" onclick="doGuestLogin()">Continue as Guest</button>
       <p class="auth-switch">Don't have an account? <span onclick="showSignup()">Sign up</span></p>
     </div>
     <div id="signup-form" style="display:none">
@@ -37,6 +40,10 @@
       <input class="auth-input" id="signup-confirm" type="password" placeholder="Confirm password">
       <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
       <p class="auth-switch">Already have an account? <span onclick="showLogin()">Sign in</span></p>
+    </div>
+    <div class="waveplayer-link">
+      <span>Also by the developer:</span>
+      <a href="https://waveplayer.netlify.app" target="_blank">🎵 WavePlayer — Free Offline Music</a>
     </div>
   </div>
 </div>
@@ -96,11 +103,15 @@
     <span class="drawer-icon">🔒</span> Privacy & Safety
   </div>
   <div class="drawer-divider"></div>
+  <div class="drawer-item" onclick="window.open('https://waveplayer.netlify.app', '_blank'); closeDrawer()">
+    <span class="drawer-icon">🎵</span> WavePlayer App
+  </div>
+  <div class="drawer-divider"></div>
   <div class="drawer-item danger" onclick="doLogout()">
     <span class="drawer-icon">🚪</span> Sign Out
   </div>
   <div class="drawer-divider"></div>
-  <div class="drawer-version">SnapMe PH v1.5 🇵🇭</div>
+  <div class="drawer-version">SnapMe PH v1.6 🇵🇭</div>
 </div>
 
 <!-- PHOTO DETAIL -->
@@ -108,7 +119,7 @@
   <div class="detail-header">
     <button class="detail-back" onclick="closePhotoDetail()">←</button>
     <span class="detail-title">Photo Detail</span>
-    <button class="detail-more" id="detailMoreBtn">···</button>
+    <button class="detail-more">···</button>
   </div>
   <div class="detail-photo-wrap">
     <img id="detailImg" src="" alt="">
@@ -116,7 +127,6 @@
     <div class="detail-overlay-right" id="detailExifOverlay"></div>
   </div>
   <div class="detail-body">
-    <!-- ACTIONS -->
     <div class="detail-actions">
       <div class="detail-action-left">
         <button class="detail-action-btn" id="detailLikeBtn" onclick="detailLike()">
@@ -134,7 +144,6 @@
       </div>
     </div>
 
-    <!-- USER -->
     <div class="detail-user-row">
       <div class="detail-user-avatar" id="detailUserAvatar">SN</div>
       <div class="detail-user-info">
@@ -151,25 +160,33 @@
 
     <!-- COMMUNITY CRITIQUE -->
     <div class="critique-section" id="critiqueSection" style="display:none">
-      <div class="critique-title">COMMUNITY CRITIQUE</div>
+      <div class="critique-title">COMMUNITY CRITIQUE <span id="critiqueCount" style="font-weight:400;color:var(--text-dim)"></span></div>
       <div id="critiqueContent"></div>
+      <div class="overall-score" id="overallScore" style="display:none">
+        <span class="overall-label">Overall</span>
+        <span class="overall-value" id="overallValue">0.0</span>
+        <span class="overall-max">/ 10</span>
+      </div>
     </div>
 
-    <!-- RATE / CRITIQUE THIS PHOTO -->
+    <!-- RATE THIS PHOTO -->
     <div class="rate-section" id="rateSection" style="display:none">
       <div class="rate-section-title">Rate this photo</div>
-      <div class="critique-inputs" id="critiqueInputs">
+      <div class="critique-inputs">
         <div class="critique-input-row">
           <span class="critique-input-label">Composition</span>
-          <div class="critique-stars" id="stars-composition" data-category="composition"></div>
+          <div class="critique-stars" id="stars-composition"></div>
+          <span class="critique-num" id="num-composition">0/10</span>
         </div>
         <div class="critique-input-row">
           <span class="critique-input-label">Lighting</span>
-          <div class="critique-stars" id="stars-lighting" data-category="lighting"></div>
+          <div class="critique-stars" id="stars-lighting"></div>
+          <span class="critique-num" id="num-lighting">0/10</span>
         </div>
         <div class="critique-input-row">
           <span class="critique-input-label">Editing</span>
-          <div class="critique-stars" id="stars-editing" data-category="editing"></div>
+          <div class="critique-stars" id="stars-editing"></div>
+          <span class="critique-num" id="num-editing">0/10</span>
         </div>
       </div>
       <button class="submit-critique-btn" onclick="submitCritique()">Submit Critique</button>
@@ -181,7 +198,7 @@
       <div id="commentsList"><div class="loading"><span class="spinner"></span></div></div>
       <div class="comment-input-row">
         <div class="comment-avatar" id="commentAvatar">SN</div>
-        <input class="comment-input" id="commentInput" placeholder="Add a comment..." id="commentInput">
+        <input class="comment-input" id="commentInput" placeholder="Add a comment...">
         <button class="comment-send" onclick="submitComment()">Post</button>
       </div>
     </div>
@@ -204,7 +221,6 @@
 <!-- MAIN APP -->
 <div id="app" style="display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh">
 
-  <!-- NAV -->
   <nav>
     <div class="logo">Snap<span>Me</span></div>
     <div class="nav-right">
@@ -218,7 +234,7 @@
   <div class="page active" id="page-feed">
     <div class="slides-row" id="slidesRow">
       <div class="slide-item" onclick="handleMySlide()">
-        <div class="slide-circle slide-add"><div class="slide-add-icon">+</div></div>
+        <div class="slide-square slide-add"><div class="slide-add-icon">+</div></div>
         <div class="slide-label">Your Slide</div>
       </div>
     </div>
@@ -239,6 +255,7 @@
         </div>
       </div>
       <input type="file" id="fileInput" accept="image/*">
+      <div class="exif-preview" id="exifPreview" style="display:none"></div>
       <select class="category-select" id="categorySelect">
         <option value="">Select a category...</option>
         <option value="Phone Photography">📱 Phone Photography</option>
@@ -304,7 +321,10 @@
         <div class="profile-avatar-edit">📷</div>
       </div>
       <div class="profile-name" id="profileName">My Profile</div>
-      <div class="profile-meta"><span id="profileUsername">@username</span></div>
+      <div class="profile-meta">
+        <span id="profileUsername">@username</span>
+        <span id="profileBadge" style="display:none" class="pioneer-badge">👑 Pioneer</span>
+      </div>
       <div class="profile-bio-text" id="profileBio"></div>
       <div class="profile-stats">
         <div class="stat"><div class="stat-num" id="profilePostCount">0</div><div class="stat-label">PHOTOS</div></div>
