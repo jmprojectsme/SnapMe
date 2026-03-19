@@ -614,7 +614,21 @@ window.closeSlideViewer = function() {
 // ================================
 
 async function initAuth() {
-  checkOnboarding()
+  // Show onboarding first if never seen
+  if (!localStorage.getItem('onboarding_done')) {
+    document.getElementById('onboarding-screen').style.display = 'block'
+    document.getElementById('auth-screen').style.display = 'none'
+    document.getElementById('app').style.display = 'none'
+    // Still check auth in background so it's ready
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      currentUser = session.user
+      await loadCurrentProfile()
+    }
+    // Wait for user to finish onboarding before proceeding
+    return
+  }
+
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     currentUser = session.user
@@ -629,7 +643,7 @@ async function initAuth() {
       currentUser = session.user
       isGuest = false
       await loadCurrentProfile()
-      showApp()
+      if (localStorage.getItem('onboarding_done')) showApp()
     } else {
       currentUser = null; currentProfile = null
       if (!isGuest) showAuthScreen()
@@ -1144,7 +1158,12 @@ window.nextSlide = function(num) {
 window.skipOnboarding = function() {
   localStorage.setItem('onboarding_done', 'true')
   document.getElementById('onboarding-screen').style.display = 'none'
-  document.getElementById('auth-screen').style.display = 'flex'
+  // If already logged in go to app, else show auth
+  if (currentUser) {
+    showApp()
+  } else {
+    showAuthScreen()
+  }
 }
 
 window.guestFromOnboarding = function() {
