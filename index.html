@@ -18,6 +18,72 @@
 </head>
 <body>
 
+<!-- ONBOARDING SCREEN -->
+<div id="onboarding-screen" style="display:none">
+  <div class="onboarding-wrap">
+    <!-- SLIDE 1 -->
+    <div class="ob-slide active" id="ob-slide-1">
+      <div class="ob-bg ob-bg-1"></div>
+      <div class="ob-content">
+        <div class="ob-skip" onclick="skipOnboarding()">Skip</div>
+        <div class="ob-top">
+          <div class="ob-logo">Snap<span>Me</span></div>
+          <div class="ob-icon">📷</div>
+          <h1 class="ob-title">Your photos deserve more than just likes.</h1>
+          <p class="ob-desc">A sanctuary for photographers who want to grow — not just be seen.</p>
+        </div>
+        <div class="ob-bottom">
+          <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+          <button class="ob-next-btn" onclick="nextSlide(2)">Next →</button>
+        </div>
+      </div>
+    </div>
+    <!-- SLIDE 2 -->
+    <div class="ob-slide" id="ob-slide-2">
+      <div class="ob-bg ob-bg-2"></div>
+      <div class="ob-content">
+        <div class="ob-skip" onclick="skipOnboarding()">Skip</div>
+        <div class="ob-top">
+          <div class="ob-icon-big">⭐</div>
+          <h1 class="ob-title">Real feedback.<br>Real growth.</h1>
+          <p class="ob-desc">Get your photos rated on <strong>Composition</strong>, <strong>Lighting</strong>, and <strong>Editing</strong> by real photographers.</p>
+          <div class="ob-critique-demo">
+            <div class="ob-demo-row"><span class="ob-demo-label">Composition</span><div class="ob-demo-bar"><div class="ob-demo-fill" style="width:90%"></div></div><span class="ob-demo-score">9.0</span></div>
+            <div class="ob-demo-row"><span class="ob-demo-label">Lighting</span><div class="ob-demo-bar"><div class="ob-demo-fill" style="width:76%"></div></div><span class="ob-demo-score">7.6</span></div>
+            <div class="ob-demo-row"><span class="ob-demo-label">Editing</span><div class="ob-demo-bar"><div class="ob-demo-fill" style="width:84%"></div></div><span class="ob-demo-score">8.4</span></div>
+          </div>
+        </div>
+        <div class="ob-bottom">
+          <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+          <button class="ob-next-btn" onclick="nextSlide(3)">Next →</button>
+        </div>
+      </div>
+    </div>
+    <!-- SLIDE 3 -->
+    <div class="ob-slide" id="ob-slide-3">
+      <div class="ob-bg ob-bg-3"></div>
+      <div class="ob-content">
+        <div class="ob-top">
+          <div class="ob-icon-big">🇵🇭</div>
+          <h1 class="ob-title">Built for Filipino phone photographers.</h1>
+          <p class="ob-desc">Shot on any camera. Judged only by quality. A community that helps each other improve.</p>
+          <div class="ob-features">
+            <div class="ob-feature">📱 Phone photography first</div>
+            <div class="ob-feature">⭐ Real community critique</div>
+            <div class="ob-feature">🚫 No ads. No algorithm.</div>
+            <div class="ob-feature">🤝 Grow together</div>
+          </div>
+        </div>
+        <div class="ob-bottom ob-bottom-last">
+          <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div></div>
+          <button class="ob-cta-btn" onclick="skipOnboarding()">Get Started 📷</button>
+          <button class="ob-ghost-btn" onclick="guestFromOnboarding()">Browse as Guest</button>
+          <div class="ob-waveplayer">Also by the developer: <a href="https://waveplayer.netlify.app" target="_blank">🎵 WavePlayer — Free Offline Music</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-box">

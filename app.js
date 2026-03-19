@@ -614,6 +614,7 @@ window.closeSlideViewer = function() {
 // ================================
 
 async function initAuth() {
+  checkOnboarding()
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     currentUser = session.user
@@ -1123,3 +1124,31 @@ if ('serviceWorker' in navigator) {
 // ================================
 
 initAuth()
+
+// ================================
+// ONBOARDING
+// ================================
+
+function checkOnboarding() {
+  if (!localStorage.getItem('onboarding_done')) {
+    document.getElementById('onboarding-screen').style.display = 'block'
+    document.getElementById('auth-screen').style.display = 'none'
+  }
+}
+
+window.nextSlide = function(num) {
+  document.querySelectorAll('.ob-slide').forEach(s => s.classList.remove('active'))
+  document.getElementById('ob-slide-' + num).classList.add('active')
+}
+
+window.skipOnboarding = function() {
+  localStorage.setItem('onboarding_done', 'true')
+  document.getElementById('onboarding-screen').style.display = 'none'
+  document.getElementById('auth-screen').style.display = 'flex'
+}
+
+window.guestFromOnboarding = function() {
+  localStorage.setItem('onboarding_done', 'true')
+  document.getElementById('onboarding-screen').style.display = 'none'
+  doGuestLogin()
+}
