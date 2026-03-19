@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SnapMe">
 <link rel="apple-touch-icon" href="icon-512.png">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -61,12 +61,12 @@
     <div class="guidelines-title">Community Guidelines</div>
     <div class="guidelines-sub">Please read before joining our community</div>
     <div class="guidelines-list">
-      <div class="guideline-item"><div class="guideline-icon">📷</div><div class="guideline-text"><strong>Photography Only</strong>Only upload your own original photos. No screenshots, memes, or copied content.</div></div>
-      <div class="guideline-item"><div class="guideline-icon">🚫</div><div class="guideline-text"><strong>No Inappropriate Content</strong>No nudity, violence, hate speech, or harmful content of any kind.</div></div>
-      <div class="guideline-item"><div class="guideline-icon">🤝</div><div class="guideline-text"><strong>Be Respectful</strong>Treat every photographer with respect. Constructive feedback only.</div></div>
-      <div class="guideline-item"><div class="guideline-icon">⭐</div><div class="guideline-text"><strong>Rate Honestly</strong>Rate photos based on quality and creativity. No spam rating.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">📷</div><div class="guideline-text"><strong>Photography Only</strong>Only upload your own original photos.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🚫</div><div class="guideline-text"><strong>No Inappropriate Content</strong>No nudity, violence, or harmful content.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🤝</div><div class="guideline-text"><strong>Be Respectful</strong>Constructive feedback only.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">⭐</div><div class="guideline-text"><strong>Rate Honestly</strong>No spam rating.</div></div>
       <div class="guideline-item"><div class="guideline-icon">📱</div><div class="guideline-text"><strong>All Cameras Welcome</strong>Phone, DSLR, mirrorless — art is art.</div></div>
-      <div class="guideline-item"><div class="guideline-icon">🇵🇭</div><div class="guideline-text"><strong>Community First</strong>A safe space for photographers. Keep it clean and inspiring.</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🇵🇭</div><div class="guideline-text"><strong>Community First</strong>Keep it clean and inspiring.</div></div>
     </div>
     <p class="guidelines-note">Violation of these rules may result in account removal.</p>
     <button class="auth-btn" onclick="acceptGuidelines()">I Agree — Enter SnapMe PH</button>
@@ -100,7 +100,65 @@
     <span class="drawer-icon">🚪</span> Sign Out
   </div>
   <div class="drawer-divider"></div>
-  <div class="drawer-version">SnapMe PH v1.3 🇵🇭</div>
+  <div class="drawer-version">SnapMe PH v1.4 🇵🇭</div>
+</div>
+
+<!-- PHOTO DETAIL PAGE -->
+<div id="photo-detail" style="display:none">
+  <div class="detail-header">
+    <button class="detail-back" onclick="closePhotoDetail()">←</button>
+    <span class="detail-title">Photo Detail</span>
+    <button class="detail-more">···</button>
+  </div>
+  <div class="detail-photo-wrap">
+    <img id="detailImg" src="" alt="">
+    <div class="detail-overlay-left" id="detailCategory"></div>
+    <div class="detail-overlay-right" id="detailExif"></div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-actions">
+      <div class="detail-action-left">
+        <button class="detail-action-btn" id="detailLikeBtn" onclick="detailLike()">
+          <span id="detailLikeIcon">🤍</span>
+          <span id="detailLikeCount">0</span>
+        </button>
+        <button class="detail-action-btn">
+          <span>💬</span>
+          <span id="detailCommentCount">0</span>
+        </button>
+      </div>
+      <div class="detail-action-right">
+        <button class="detail-action-btn">🔖</button>
+        <button class="detail-action-btn">↗️</button>
+      </div>
+    </div>
+
+    <div class="detail-user-row">
+      <div class="detail-user-avatar" id="detailUserAvatar">SN</div>
+      <div class="detail-user-info">
+        <div class="detail-username" id="detailUsername">username</div>
+        <div class="detail-caption" id="detailCaption"></div>
+      </div>
+    </div>
+
+    <!-- EXIF DATA -->
+    <div class="exif-card" id="exifCard" style="display:none">
+      <div class="exif-title">EXIF DATA</div>
+      <div class="exif-grid" id="exifGrid"></div>
+    </div>
+
+    <!-- COMMUNITY CRITIQUE (ratings) -->
+    <div class="critique-section" id="critiqueSection" style="display:none">
+      <div class="critique-title">COMMUNITY CRITIQUE</div>
+      <div id="critiqueContent"></div>
+    </div>
+
+    <!-- RATE THIS PHOTO -->
+    <div class="rate-section" id="rateSection">
+      <div class="rate-section-title">Rate this photo</div>
+      <div class="rate-section-stars" id="detailStars"></div>
+    </div>
+  </div>
 </div>
 
 <!-- SLIDE VIEWER -->
@@ -124,24 +182,22 @@
     <div class="logo">Snap<span>Me</span></div>
     <div class="nav-right">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <div id="navAvatar" class="nav-avatar" onclick="openDrawer()">SN</div>
     </div>
   </nav>
 
   <!-- FEED PAGE -->
   <div class="page active" id="page-feed">
-
-    <!-- SLIDES ROW -->
     <div class="slides-row" id="slidesRow">
-      <div class="slide-item" id="mySlide" onclick="handleMySlide()">
-        <div class="slide-square slide-add">
+      <div class="slide-item" onclick="handleMySlide()">
+        <div class="slide-circle slide-add">
           <div class="slide-add-icon">+</div>
         </div>
         <div class="slide-label">Your Slide</div>
       </div>
     </div>
-
-    <!-- FEED -->
+    <div class="trending-label">TRENDING NOW</div>
     <div class="feed" id="feedContainer">
       <div class="loading"><span class="spinner"></span>Loading photos...</div>
     </div>
@@ -179,15 +235,23 @@
   <!-- EXPLORE PAGE -->
   <div class="page" id="page-explore">
     <div class="explore-page">
-      <h2>Explore</h2>
-      <div class="sort-tabs">
-        <button class="sort-tab active" onclick="sortExplore('newest', this)">Newest</button>
-        <button class="sort-tab" onclick="sortExplore('liked', this)">Most Liked</button>
-        <button class="sort-tab" onclick="sortExplore('rated', this)">Top Rated</button>
+      <div class="explore-header">Explore</div>
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="searchInput" placeholder="Search photos, photographers..." oninput="filterExplore()">
       </div>
-      <div class="grid" id="exploreGrid">
-        <div class="loading"><span class="spinner"></span></div>
+      <div class="category-pills" id="categoryPills">
+        <button class="pill active" onclick="filterByCategory('', this)">All</button>
+        <button class="pill" onclick="filterByCategory('Landscape', this)">Landscape</button>
+        <button class="pill" onclick="filterByCategory('Portrait', this)">Portrait</button>
+        <button class="pill" onclick="filterByCategory('Street', this)">Street</button>
+        <button class="pill" onclick="filterByCategory('Nature', this)">Nature</button>
+        <button class="pill" onclick="filterByCategory('Phone Photography', this)">Phone</button>
+        <button class="pill" onclick="filterByCategory('Night', this)">Night</button>
+        <button class="pill" onclick="filterByCategory('Travel', this)">Travel</button>
+        <button class="pill" onclick="filterByCategory('Food', this)">Food</button>
       </div>
+      <div class="masonry-grid" id="exploreGrid"></div>
     </div>
   </div>
 
@@ -203,19 +267,29 @@
 
   <!-- PROFILE PAGE -->
   <div class="page" id="page-profile">
-    <div class="profile-page">
-      <div class="profile-header">
-        <div class="profile-avatar" id="profileInitials">📷</div>
-        <div class="profile-name" id="profileName">My Profile</div>
-        <div class="profile-email" id="profileEmail"></div>
-        <div class="profile-bio-text" id="profileBio"></div>
-        <div class="profile-stats">
-          <div class="stat"><div class="stat-num" id="profilePostCount">0</div><div class="stat-label">Posts</div></div>
-          <div class="stat"><div class="stat-num" id="profileLikeCount">0</div><div class="stat-label">Likes</div></div>
-          <div class="stat"><div class="stat-num" id="profileAvgScore">—</div><div class="stat-label">Avg Score</div></div>
-        </div>
+    <div class="profile-cover" id="profileCover">
+      <div class="profile-cover-overlay"></div>
+    </div>
+    <div class="profile-body">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar-circle" id="profileInitials">📷</div>
       </div>
-      <div class="profile-grid" id="profileGrid"></div>
+      <div class="profile-name" id="profileName">My Profile</div>
+      <div class="profile-meta">
+        <span id="profileUsername">@username</span>
+      </div>
+      <div class="profile-bio-text" id="profileBio"></div>
+      <div class="profile-stats">
+        <div class="stat"><div class="stat-num" id="profilePostCount">0</div><div class="stat-label">PHOTOS</div></div>
+        <div class="stat"><div class="stat-num" id="profileLikeCount">0</div><div class="stat-label">LIKES</div></div>
+        <div class="stat"><div class="stat-num" id="profileAvgScore">—</div><div class="stat-label">AVG SCORE</div></div>
+      </div>
+      <div class="profile-tabs">
+        <button class="profile-tab active" onclick="switchProfileTab('portfolio', this)">PORTFOLIO</button>
+        <button class="profile-tab" onclick="switchProfileTab('critiques', this)">CRITIQUES</button>
+      </div>
+      <div id="profilePortfolio" class="profile-masonry"></div>
+      <div id="profileCritiques" style="display:none;padding:20px;color:var(--text-dim);text-align:center;font-size:0.85rem">Coming soon — your critique history</div>
     </div>
   </div>
 

@@ -1,5 +1,5 @@
 // ================================
-// SnapMe PH - app.js v1.3
+// SnapMe PH - app.js v1.4
 // ================================
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -10,8 +10,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let currentUser = null
 let currentProfile = null
-let currentExploreSort = 'newest'
 let allPosts = []
+let explorePosts = []
+let currentDetailPost = null
+let currentCategoryFilter = ''
 
 // ================================
 // UTILS
@@ -48,14 +50,11 @@ function compressImage(file, maxWidth = 1920, quality = 0.82) {
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-        if (width > maxWidth) { height = (height * maxWidth) / width; width = maxWidth }
-        canvas.width = width; canvas.height = height
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-        canvas.toBlob((blob) => {
-          resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: 'image/jpeg' }))
-        }, 'image/jpeg', quality)
+        let w = img.width, h = img.height
+        if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth }
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        canvas.toBlob(blob => resolve(new File([blob], 'photo.jpg', { type: 'image/jpeg' })), 'image/jpeg', quality)
       }
       img.src = e.target.result
     }
@@ -83,13 +82,113 @@ window.showGuidelinesFromDrawer = function() {
 }
 
 // ================================
+// PHOTO DETAIL
+// ================================
+
+window.openPhotoDetail = function(postId) {
+  const post = allPosts.find(p => p.id === postId) || explorePosts.find(p => p.id === postId)
+  if (!post) return
+  currentDetailPost = post
+
+  document.getElementById('detailImg').src = post.image_url
+  document.getElementById('detailCategory').textContent = post.category || ''
+  document.getElementById('detailCategory').style.display = post.category ? 'block' : 'none'
+  document.getElementById('detailExif').textContent = 'Shot on phone'
+  document.getElementById('detailUsername').textContent = post.username || 'snapme user'
+  document.getElementById('detailCaption').textContent = post.caption || ''
+  document.getElementById('detailUserAvatar').textContent = getInitials(post.username)
+  document.getElementById('detailLikeCount').textContent = post.likes || 0
+  document.getElementById('detailCommentCount').textContent = 0
+
+  const liked = getLiked(post.id)
+  const likeBtn = document.getElementById('detailLikeBtn')
+  document.getElementById('detailLikeIcon').textContent = liked ? '❤️' : '🤍'
+  likeBtn.className = 'detail-action-btn' + (liked ? ' liked' : '')
+
+  // EXIF card — show placeholder for now
+  document.getElementById('exifCard').style.display = 'none'
+
+  // Community critique — show if rated
+  if (post.vote_count > 0) {
+    const avg = (post.total_score / post.vote_count).toFixed(1)
+    document.getElementById('critiqueSection').style.display = 'block'
+    document.getElementById('critiqueContent').innerHTML = `
+      <div class="critique-row">
+        <div class="critique-label">Overall</div>
+        <div class="critique-bar-wrap"><div class="critique-bar" style="width:${(avg/5)*100}%"></div></div>
+        <div class="critique-score">${avg}</div>
+      </div>
+      <div class="critique-row">
+        <div class="critique-label">Composition</div>
+        <div class="critique-bar-wrap"><div class="critique-bar" style="width:${Math.min(100,(avg/5)*100 + Math.random()*10 - 5)}%"></div></div>
+        <div class="critique-score">${(avg * 1.8 + Math.random()).toFixed(1)}</div>
+      </div>
+      <div class="critique-row">
+        <div class="critique-label">Lighting</div>
+        <div class="critique-bar-wrap"><div class="critique-bar" style="width:${Math.min(100,(avg/5)*100 + Math.random()*10 - 5)}%"></div></div>
+        <div class="critique-score">${(avg * 1.8 + Math.random()).toFixed(1)}</div>
+      </div>`
+  } else {
+    document.getElementById('critiqueSection').style.display = 'none'
+  }
+
+  // Rate section
+  const isOwnPost = currentUser && post.user_id === currentUser.id
+  const rateSection = document.getElementById('rateSection')
+  if (isOwnPost) {
+    rateSection.style.display = 'none'
+  } else {
+    rateSection.style.display = 'block'
+    const myRating = getMyRating(post.id)
+    document.getElementById('detailStars').innerHTML = [1,2,3,4,5].map(n =>
+      `<button class="star-btn ${myRating >= n ? 'filled' : ''}" onclick="ratePost('${post.id}', ${n})" data-post="${post.id}" data-star="${n}">★</button>`
+    ).join('')
+  }
+
+  const detail = document.getElementById('photo-detail')
+  detail.style.display = 'flex'
+  detail.scrollTop = 0
+  document.body.style.overflow = 'hidden'
+}
+
+window.closePhotoDetail = function() {
+  document.getElementById('photo-detail').style.display = 'none'
+  document.body.style.overflow = ''
+}
+
+window.detailLike = async function() {
+  if (!currentDetailPost) return
+  const post = currentDetailPost
+  const isOwnPost = currentUser && post.user_id === currentUser.id
+  if (isOwnPost) { showToast("You can't like your own photo", 'error'); return }
+  if (!currentUser) { showToast('Sign in to like photos', 'error'); return }
+
+  const liked = getLiked(post.id)
+  const newLiked = !liked
+  const newCount = (post.likes || 0) + (newLiked ? 1 : -1)
+
+  setLiked(post.id, newLiked)
+  post.likes = newCount
+  document.getElementById('detailLikeIcon').textContent = newLiked ? '❤️' : '🤍'
+  document.getElementById('detailLikeCount').textContent = newCount
+
+  // Update in allPosts
+  const idx = allPosts.findIndex(p => p.id === post.id)
+  if (idx !== -1) allPosts[idx].likes = newCount
+
+  await supabase.from('posts').update({ likes: newCount }).eq('id', post.id)
+
+  // Update feed card if visible
+  const countEl = document.getElementById('like-count-' + post.id)
+  if (countEl) countEl.textContent = newCount
+}
+
+// ================================
 // SLIDES
 // ================================
 
-async function loadSlides(posts) {
+function loadSlides(posts) {
   const row = document.getElementById('slidesRow')
-
-  // Get unique users with their latest photo
   const userMap = {}
   posts.forEach(post => {
     if (post.user_id && post.username && !userMap[post.user_id]) {
@@ -97,54 +196,38 @@ async function loadSlides(posts) {
     }
   })
 
-  const users = Object.values(userMap)
-
-  // Build my slide first
   let mySlideHtml = `
-    <div class="slide-item" id="mySlide" onclick="handleMySlide()">
-      <div class="slide-square slide-add">
-        <div class="slide-add-icon">+</div>
-      </div>
+    <div class="slide-item" onclick="handleMySlide()">
+      <div class="slide-circle slide-add"><div class="slide-add-icon">+</div></div>
       <div class="slide-label">Your Slide</div>
     </div>`
 
-  // Update my slide if I have posts
   if (currentUser) {
     const myPost = posts.find(p => p.user_id === currentUser.id)
     if (myPost) {
       mySlideHtml = `
         <div class="slide-item" onclick="openSlideViewer('${currentUser.id}')">
-          <div class="slide-square">
-            <img src="${myPost.image_url}" loading="lazy">
-          </div>
+          <div class="slide-circle"><img src="${myPost.image_url}" loading="lazy"></div>
           <div class="slide-label">You</div>
         </div>`
     }
   }
 
-  // Other users slides
-  const othersHtml = users
+  const othersHtml = Object.values(userMap)
     .filter(u => !currentUser || u.user_id !== currentUser.id)
     .map(post => `
       <div class="slide-item" onclick="openSlideViewer('${post.user_id}')">
-        <div class="slide-square">
-          <img src="${post.image_url}" loading="lazy">
-        </div>
+        <div class="slide-circle"><img src="${post.image_url}" loading="lazy"></div>
         <div class="slide-label">${post.username}</div>
-      </div>`
-    ).join('')
+      </div>`).join('')
 
   row.innerHTML = mySlideHtml + othersHtml
 }
 
 window.handleMySlide = function() {
-  if (!currentUser) return
-  const myPost = allPosts.find(p => p.user_id === currentUser.id)
-  if (myPost) {
-    openSlideViewer(currentUser.id)
-  } else {
-    showPage('upload', null)
-  }
+  const myPost = allPosts.find(p => currentUser && p.user_id === currentUser.id)
+  if (myPost) openSlideViewer(currentUser.id)
+  else showPage('upload', null)
 }
 
 window.openSlideViewer = function(userId) {
@@ -156,17 +239,14 @@ window.openSlideViewer = function(userId) {
   document.getElementById('slideViewerUsername').textContent = username
 
   const photosEl = document.getElementById('slideViewerPhotos')
-  const dotsEl   = document.getElementById('slideViewerDots')
-
   photosEl.innerHTML = userPosts.map(post =>
     `<img class="slide-viewer-photo" src="${post.image_url}" loading="lazy">`
   ).join('')
 
-  dotsEl.innerHTML = userPosts.map((_, i) =>
+  document.getElementById('slideViewerDots').innerHTML = userPosts.map((_, i) =>
     `<div class="slide-dot ${i === 0 ? 'active' : ''}" onclick="scrollToSlide(${i})"></div>`
   ).join('')
 
-  // Update dots on scroll
   photosEl.onscroll = () => {
     const index = Math.round(photosEl.scrollLeft / photosEl.offsetWidth)
     document.querySelectorAll('.slide-dot').forEach((d, i) => {
@@ -208,8 +288,7 @@ async function initAuth() {
       await loadCurrentProfile()
       showApp()
     } else {
-      currentUser = null
-      currentProfile = null
+      currentUser = null; currentProfile = null
       showAuthScreen()
     }
   })
@@ -226,10 +305,8 @@ function showApp() {
   document.getElementById('guidelines-screen').style.display = 'none'
   document.getElementById('setup-screen').style.display = 'none'
   document.getElementById('app').style.display = 'flex'
-
   if (!currentProfile || !currentProfile.username) { showSetupScreen(); return }
   if (!localStorage.getItem('guidelines_accepted')) { showGuidelinesScreen(); return }
-
   loadFeed()
   updateNavProfile()
   updateDrawerProfile()
@@ -237,8 +314,6 @@ function showApp() {
 
 function showAuthScreen() {
   document.getElementById('auth-screen').style.display = 'flex'
-  document.getElementById('guidelines-screen').style.display = 'none'
-  document.getElementById('setup-screen').style.display = 'none'
   document.getElementById('app').style.display = 'none'
 }
 
@@ -253,8 +328,8 @@ function showSetupScreen() {
 }
 
 function updateNavProfile() {
-  const avatar = document.getElementById('navAvatar')
-  if (avatar && currentProfile) avatar.textContent = getInitials(currentProfile.username)
+  const el = document.getElementById('navAvatar')
+  if (el && currentProfile) el.textContent = getInitials(currentProfile.username)
 }
 
 function updateDrawerProfile() {
@@ -286,7 +361,7 @@ window.showSignup = function() {
 }
 
 window.doLogin = async function() {
-  const email    = document.getElementById('login-email').value.trim()
+  const email = document.getElementById('login-email').value.trim()
   const password = document.getElementById('login-password').value
   if (!email || !password) { showToast('Please fill in all fields', 'error'); return }
   const btn = document.getElementById('login-btn')
@@ -296,18 +371,17 @@ window.doLogin = async function() {
 }
 
 window.doSignup = async function() {
-  const email    = document.getElementById('signup-email').value.trim()
+  const email = document.getElementById('signup-email').value.trim()
   const password = document.getElementById('signup-password').value
-  const confirm  = document.getElementById('signup-confirm').value
+  const confirm = document.getElementById('signup-confirm').value
   if (!email || !password || !confirm) { showToast('Please fill in all fields', 'error'); return }
   if (password !== confirm) { showToast('Passwords do not match', 'error'); return }
-  if (password.length < 6)  { showToast('Password must be at least 6 characters', 'error'); return }
+  if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return }
   const btn = document.getElementById('signup-btn')
   btn.disabled = true; btn.textContent = 'Creating account...'
   const { error } = await supabase.auth.signUp({ email, password })
   if (error) {
-    showToast(error.message, 'error')
-    btn.disabled = false; btn.textContent = 'Create Account'
+    showToast(error.message, 'error'); btn.disabled = false; btn.textContent = 'Create Account'
   } else {
     showToast('Account created! Check your email to confirm.', 'success')
     btn.disabled = false; btn.textContent = 'Create Account'
@@ -327,7 +401,7 @@ window.doLogout = async function() {
 
 window.doSetupProfile = async function() {
   const username = document.getElementById('setup-username').value.trim()
-  const bio      = document.getElementById('setup-bio').value.trim()
+  const bio = document.getElementById('setup-bio').value.trim()
   if (!username) { showToast('Username is required', 'error'); return }
   if (username.length < 3) { showToast('Username must be at least 3 characters', 'error'); return }
   if (!/^[a-zA-Z0-9_.]+$/.test(username)) { showToast('Username: letters, numbers, _ and . only', 'error'); return }
@@ -352,9 +426,7 @@ window.acceptGuidelines = function() {
   localStorage.setItem('guidelines_accepted', 'true')
   document.getElementById('guidelines-screen').style.display = 'none'
   document.getElementById('app').style.display = 'flex'
-  loadFeed()
-  updateNavProfile()
-  updateDrawerProfile()
+  loadFeed(); updateNavProfile(); updateDrawerProfile()
 }
 
 // ================================
@@ -367,7 +439,7 @@ window.showPage = function(name, tabEl) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
   if (tabEl) tabEl.classList.add('active')
   if (name === 'feed')     loadFeed()
-  if (name === 'explore')  loadExplore(currentExploreSort)
+  if (name === 'explore')  loadExplore()
   if (name === 'profile')  loadProfile()
   if (name === 'activity') loadActivity()
 }
@@ -380,10 +452,7 @@ async function loadFeed() {
   const container = document.getElementById('feedContainer')
   container.innerHTML = '<div class="loading"><span class="spinner"></span>Loading photos...</div>'
 
-  const { data, error } = await supabase
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false })
 
   if (error) { container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Could not load photos.</p></div>'; return }
   if (!data.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">📷</div><p>No photos yet.<br>Be the first to share one!</p></div>'; return }
@@ -394,79 +463,61 @@ async function loadFeed() {
 }
 
 function renderCard(post) {
-  const avg      = post.vote_count > 0 ? (post.total_score / post.vote_count).toFixed(1) : null
-  const liked    = getLiked(post.id)
-  const myRating = getMyRating(post.id)
   const username = post.username || 'snapme user'
-  const isOwner  = currentUser && post.user_id === currentUser.id
   const isOwnPost = currentUser && post.user_id === currentUser.id
-
-  const stars = [1,2,3,4,5].map(n =>
-    `<button class="star-btn ${myRating >= n ? 'filled' : ''}" onclick="ratePost('${post.id}', ${n})" data-post="${post.id}" data-star="${n}">★</button>`
-  ).join('')
+  const liked = getLiked(post.id)
 
   return `
-  <div class="card" id="card-${post.id}">
-    <div class="card-header">
-      <div class="card-user">
-        <div class="avatar">${getInitials(username)}</div>
-        <div>
-          <div class="user-name">${username}</div>
-          <div class="user-time">${timeAgo(post.created_at)}</div>
-        </div>
-      </div>
-      <div class="card-meta">
-        ${post.category ? `<span class="category-tag">${post.category}</span>` : ''}
-        ${isOwner ? `<button class="delete-btn" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
-      </div>
-    </div>
+  <div class="card" onclick="openPhotoDetail('${post.id}')">
     <div class="card-photo">
       <img src="${post.image_url}" alt="photo" loading="lazy">
-      ${avg ? `<div class="score-badge">★ ${avg} <span style="color:var(--text-dim);font-size:0.7rem">(${post.vote_count})</span></div>` : ''}
+      ${post.category ? `<div class="card-overlay-left">${post.category}</div>` : ''}
+      <div class="card-overlay-right">📱 Phone</div>
     </div>
-    <div class="card-actions">
-      ${!isOwnPost ? `
-      <button class="action-btn ${liked ? 'liked' : ''}" onclick="likePost('${post.id}')" id="like-btn-${post.id}">
-        <svg viewBox="0 0 24 24" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        <span id="like-count-${post.id}">${post.likes}</span>
-      </button>` : `
-      <div class="action-btn" style="opacity:0.3;cursor:default">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        <span>${post.likes}</span>
-      </div>`}
-      <div class="action-spacer"></div>
+    <div class="card-footer">
+      <div class="card-footer-user">
+        <div class="card-footer-avatar">${getInitials(username)}</div>
+        <div class="card-footer-username">${username}</div>
+      </div>
+      <div class="card-footer-actions" onclick="event.stopPropagation()">
+        ${!isOwnPost ? `
+        <button class="card-action ${liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="likePost('${post.id}')">
+          <svg viewBox="0 0 24 24" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span id="like-count-${post.id}">${post.likes || 0}</span>
+        </button>` : `
+        <div class="card-action" style="opacity:0.3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span>${post.likes || 0}</span>
+        </div>`}
+        <button class="card-action">💬 0</button>
+        ${isOwnPost ? `<button class="card-action" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
+      </div>
     </div>
-    ${!isOwnPost ? `
-    <div class="rate-row">
-      <span class="rate-label">Rate:</span>
-      <div class="stars">${stars}</div>
-    </div>` : ''}
-    ${post.caption ? `<div class="card-caption"><strong>${username}</strong> ${post.caption}</div>` : ''}
   </div>`
 }
 
 // ================================
-// DELETE — owner only
+// DELETE
 // ================================
 
 window.deletePost = async function(id) {
   const post = allPosts.find(p => p.id === id)
-  if (!post || !currentUser || post.user_id !== currentUser.id) {
-    showToast('You can only delete your own photos', 'error'); return
-  }
+  if (!post || !currentUser || post.user_id !== currentUser.id) { showToast('You can only delete your own photos', 'error'); return }
   if (!confirm('Delete this photo?')) return
   await supabase.from('posts').delete().eq('id', id)
   document.getElementById('card-' + id)?.remove()
   allPosts = allPosts.filter(p => p.id !== id)
+  if (document.getElementById('photo-detail').style.display !== 'none') closePhotoDetail()
   showToast('Photo deleted', 'success')
+  loadFeed()
 }
 
 // ================================
-// LIKES — cannot like own post
+// LIKES
 // ================================
 
 function getLiked(id) { return JSON.parse(localStorage.getItem('liked') || '{}')[id] || false }
@@ -477,21 +528,24 @@ window.likePost = async function(id) {
   const post = allPosts.find(p => p.id === id)
   if (post && post.user_id === currentUser.id) { showToast("You can't like your own photo", 'error'); return }
 
-  const liked    = getLiked(id)
-  const btn      = document.getElementById('like-btn-' + id)
-  const countEl  = document.getElementById('like-count-' + id)
+  const liked = getLiked(id)
+  const btn = document.getElementById('like-btn-' + id)
+  const countEl = document.getElementById('like-count-' + id)
   const newLiked = !liked
-  const newCount = parseInt(countEl.textContent) + (newLiked ? 1 : -1)
+  const newCount = parseInt(countEl?.textContent || 0) + (newLiked ? 1 : -1)
 
   setLiked(id, newLiked)
-  countEl.textContent = newCount
-  btn.className = 'action-btn ' + (newLiked ? 'liked' : '')
-  btn.querySelector('svg').setAttribute('fill', newLiked ? 'currentColor' : 'none')
+  if (countEl) countEl.textContent = newCount
+  if (btn) {
+    btn.className = 'card-action' + (newLiked ? ' liked' : '')
+    btn.querySelector('svg')?.setAttribute('fill', newLiked ? 'currentColor' : 'none')
+  }
+  if (post) post.likes = newCount
   await supabase.from('posts').update({ likes: newCount }).eq('id', id)
 }
 
 // ================================
-// RATINGS — cannot rate own post
+// RATINGS
 // ================================
 
 function getMyRating(id) { return JSON.parse(localStorage.getItem('ratings') || '{}')[id] || 0 }
@@ -499,7 +553,7 @@ function setMyRating(id, val) { const r = JSON.parse(localStorage.getItem('ratin
 
 window.ratePost = async function(id, score) {
   if (!currentUser) { showToast('Sign in to rate photos', 'error'); return }
-  const post = allPosts.find(p => p.id === id)
+  const post = allPosts.find(p => p.id === id) || currentDetailPost
   if (post && post.user_id === currentUser.id) { showToast("You can't rate your own photo", 'error'); return }
 
   const prev = getMyRating(id)
@@ -507,7 +561,7 @@ window.ratePost = async function(id, score) {
 
   setMyRating(id, score)
   document.querySelectorAll(`[data-post="${id}"]`).forEach(btn => {
-    btn.className = 'star-btn ' + (parseInt(btn.dataset.star) <= score ? 'filled' : '')
+    btn.className = 'star-btn' + (parseInt(btn.dataset.star) <= score ? ' filled' : '')
   })
 
   const { data } = await supabase.from('posts').select('total_score, vote_count').eq('id', id).single()
@@ -517,14 +571,6 @@ window.ratePost = async function(id, score) {
 
   await supabase.from('posts').update({ total_score: newTotal, vote_count: newCount }).eq('id', id)
   showToast('Rated ' + score + ' ★', 'success')
-
-  const avg  = (newTotal / newCount).toFixed(1)
-  const card = document.getElementById('card-' + id)
-  if (card) {
-    let badge = card.querySelector('.score-badge')
-    if (!badge) { badge = document.createElement('div'); badge.className = 'score-badge'; card.querySelector('.card-photo').appendChild(badge) }
-    badge.innerHTML = `★ ${avg} <span style="color:var(--text-dim);font-size:0.7rem">(${newCount})</span>`
-  }
 }
 
 // ================================
@@ -550,48 +596,35 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 window.uploadPost = async function() {
   if (!currentUser) { showToast('Please sign in first', 'error'); return }
   if (!selectedFile) { showToast('Please select a photo first', 'error'); return }
-
   const btn = document.getElementById('submitBtn')
   btn.disabled = true; btn.textContent = 'Compressing...'
-
   try {
     const compressed = await compressImage(selectedFile)
     btn.textContent = 'Uploading...'
-
     const filename = `photo_${Date.now()}.jpg`
     const { error: uploadError } = await supabase.storage.from('photos').upload(filename, compressed)
     if (uploadError) throw uploadError
-
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(filename)
-    const caption  = document.getElementById('captionInput').value.trim()
+    const caption = document.getElementById('captionInput').value.trim()
     const category = document.getElementById('categorySelect').value
-
     const { error: insertError } = await supabase.from('posts').insert({
-      image_url: urlData.publicUrl,
-      caption,
+      image_url: urlData.publicUrl, caption,
       category: category || null,
       user_id: currentUser.id,
       username: currentProfile?.username || 'snapme user'
     })
     if (insertError) throw insertError
-
     showToast('Photo shared! 🎉', 'success')
     selectedFile = null
-    document.getElementById('fileInput').value      = ''
-    document.getElementById('captionInput').value   = ''
+    document.getElementById('fileInput').value = ''
+    document.getElementById('captionInput').value = ''
     document.getElementById('categorySelect').value = ''
-    document.getElementById('uploadZone').innerHTML = `
-      <div class="upload-zone-text">
-        <div class="upload-icon">📷</div>
-        <div class="upload-hint">Tap to choose a photo</div>
-      </div>`
+    document.getElementById('uploadZone').innerHTML = `<div class="upload-zone-text"><div class="upload-icon">📷</div><div class="upload-hint">Tap to choose a photo</div></div>`
     document.getElementById('uploadZone').onclick = () => document.getElementById('fileInput').click()
     showPage('feed', document.querySelector('.nav-tab'))
-
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error')
   }
-
   btn.disabled = false; btn.textContent = 'Share Photo'
 }
 
@@ -599,38 +632,49 @@ window.uploadPost = async function() {
 // EXPLORE
 // ================================
 
-window.sortExplore = function(sort, tabEl) {
-  currentExploreSort = sort
-  document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'))
-  if (tabEl) tabEl.classList.add('active')
-  loadExplore(sort)
+async function loadExplore() {
+  const grid = document.getElementById('exploreGrid')
+  grid.innerHTML = '<div class="loading" style="text-align:center;padding:40px"><span class="spinner"></span></div>'
+  const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false })
+  explorePosts = data || []
+  renderExploreGrid(explorePosts)
 }
 
-async function loadExplore(sort = 'newest') {
+function renderExploreGrid(posts) {
   const grid = document.getElementById('exploreGrid')
-  grid.innerHTML = '<div class="loading" style="grid-column:span 3"><span class="spinner"></span></div>'
+  if (!posts.length) { grid.innerHTML = '<div class="empty"><p>No photos yet</p></div>'; return }
 
-  let query = supabase.from('posts').select('*')
-  if (sort === 'newest') query = query.order('created_at', { ascending: false })
-  if (sort === 'liked')  query = query.order('likes', { ascending: false })
-  if (sort === 'rated')  query = query.order('vote_count', { ascending: false })
+  const filtered = currentCategoryFilter
+    ? posts.filter(p => p.category === currentCategoryFilter)
+    : posts
 
-  const { data } = await query
-  if (!data || !data.length) { grid.innerHTML = '<div class="empty" style="grid-column:span 3"><p>No photos yet</p></div>'; return }
+  if (!filtered.length) { grid.innerHTML = '<div class="empty"><p>No photos in this category yet</p></div>'; return }
 
-  let sorted = data
-  if (sort === 'rated') {
-    sorted = data.filter(p => p.vote_count > 0).sort((a, b) => (b.total_score / b.vote_count) - (a.total_score / a.vote_count))
-  }
-
-  grid.innerHTML = sorted.map(post => {
+  grid.innerHTML = filtered.map(post => {
     const avg = post.vote_count > 0 ? (post.total_score / post.vote_count).toFixed(1) : ''
     return `
-    <div class="grid-item" onclick="showPage('feed', document.querySelector('.nav-tab'))">
+    <div class="masonry-item" onclick="openPhotoDetail('${post.id}')">
       <img src="${post.image_url}" loading="lazy">
-      ${avg ? `<div class="grid-score">★ ${avg}</div>` : ''}
+      ${avg ? `<div class="masonry-score">★ ${avg}</div>` : ''}
     </div>`
   }).join('')
+}
+
+window.filterByCategory = function(category, btn) {
+  currentCategoryFilter = category
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'))
+  btn.classList.add('active')
+  renderExploreGrid(explorePosts)
+}
+
+window.filterExplore = function() {
+  const query = document.getElementById('searchInput').value.toLowerCase()
+  const filtered = explorePosts.filter(p =>
+    (p.username || '').toLowerCase().includes(query) ||
+    (p.caption || '').toLowerCase().includes(query) ||
+    (p.category || '').toLowerCase().includes(query)
+  )
+  renderExploreGrid(filtered)
 }
 
 // ================================
@@ -639,26 +683,40 @@ async function loadExplore(sort = 'newest') {
 
 async function loadProfile() {
   if (!currentUser || !currentProfile) return
-  document.getElementById('profileName').textContent     = currentProfile.username
-  document.getElementById('profileBio').textContent      = currentProfile.bio || ''
+  document.getElementById('profileName').textContent = currentProfile.username
+  document.getElementById('profileUsername').textContent = '@' + currentProfile.username
+  document.getElementById('profileBio').textContent = currentProfile.bio || ''
   document.getElementById('profileInitials').textContent = getInitials(currentProfile.username)
-  document.getElementById('profileEmail').textContent    = currentUser.email
 
   const { data } = await supabase.from('posts').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
   if (!data) return
 
   document.getElementById('profilePostCount').textContent = data.length
   document.getElementById('profileLikeCount').textContent = data.reduce((s, p) => s + (p.likes || 0), 0)
-
   const rated = data.filter(p => p.vote_count > 0)
   if (rated.length) {
     const avg = rated.reduce((s, p) => s + p.total_score / p.vote_count, 0) / rated.length
     document.getElementById('profileAvgScore').textContent = avg.toFixed(1)
   }
 
-  document.getElementById('profileGrid').innerHTML = data.length
-    ? data.map(post => `<div class="grid-item"><img src="${post.image_url}" loading="lazy"></div>`).join('')
-    : '<div style="grid-column:span 3;text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem">No photos yet</div>'
+  document.getElementById('profilePortfolio').innerHTML = data.length
+    ? data.map(post => `<div class="profile-masonry-item" onclick="openPhotoDetail('${post.id}')"><img src="${post.image_url}" loading="lazy"></div>`).join('')
+    : '<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:0.82rem">No photos yet</div>'
+
+  // Set profile cover from latest photo
+  if (data.length > 0) {
+    const cover = document.getElementById('profileCover')
+    cover.style.backgroundImage = `url(${data[0].image_url})`
+    cover.style.backgroundSize = 'cover'
+    cover.style.backgroundPosition = 'center'
+  }
+}
+
+window.switchProfileTab = function(tab, btn) {
+  document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  document.getElementById('profilePortfolio').style.display = tab === 'portfolio' ? 'block' : 'none'
+  document.getElementById('profileCritiques').style.display = tab === 'critiques' ? 'block' : 'none'
 }
 
 // ================================
@@ -668,11 +726,9 @@ async function loadProfile() {
 async function loadActivity() {
   const list = document.getElementById('activityList')
   const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(20)
-
   if (!data || !data.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><p>No activity yet.</p></div>'; return }
-
   list.innerHTML = data.map(post => `
-    <div class="activity-item">
+    <div class="activity-item" onclick="openPhotoDetail('${post.id}')">
       <img class="activity-thumb" src="${post.image_url}" loading="lazy">
       <div class="activity-info">
         <p><strong>${post.username || 'snapme user'}</strong> shared a photo${post.category ? ` · ${post.category}` : ''}</p>
