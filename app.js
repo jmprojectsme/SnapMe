@@ -98,6 +98,13 @@ function readExif(file) {
 // GUEST LOGIN
 // ================================
 
+window.exitGuest = function() {
+  isGuest = false
+  const bar = document.getElementById('guestBar')
+  if (bar) bar.remove()
+  showAuthScreen()
+}
+
 window.doGuestLogin = function() {
   isGuest = true
   localStorage.setItem('guidelines_accepted', 'true')
@@ -114,7 +121,7 @@ function showGuestBar() {
   const bar = document.createElement('div')
   bar.id = 'guestBar'
   bar.className = 'guest-bar'
-  bar.innerHTML = `Browsing as guest — <span onclick="showAuthScreen()">Sign up</span> to like, comment & upload 📷`
+  bar.innerHTML = `Browsing as guest — <span onclick="showAuthScreen()">Sign up</span> to like, comment & upload 📷 · <span onclick="exitGuest()" style="color:var(--red)">Exit</span>`
   document.getElementById('app').insertBefore(bar, document.querySelector('nav').nextSibling)
 }
 
