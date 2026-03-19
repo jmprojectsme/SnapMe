@@ -84,7 +84,7 @@ function readExif(file) {
         const deviceName = [make, model].filter(Boolean).join(' ').trim()
         if (deviceName) exif.Camera = deviceName
         if (fNumber)    exif.Aperture = 'f/' + (fNumber.numerator / fNumber.denominator).toFixed(1)
-        if (expo)       exif.Shutter = expo.numerator === 1 ? `1/${expo.denominator}s` : `${(expo.numerator / expo.denominator).toFixed(1)}s`
+        if (expo) { const val = expo.numerator / expo.denominator; exif.Shutter = val < 1 ? `1/${Math.round(1/val)}s` : `${val.toFixed(1)}s` }
         if (iso)        exif.ISO = 'ISO' + iso
         if (focal)      exif.Focal = focal + 'mm'
 

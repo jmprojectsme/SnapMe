@@ -129,12 +129,12 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .detail-caption { font-size: 0.82rem; color: var(--text-mid); line-height: 1.5; margin-top: 3px; }
 
 /* EXIF */
-.exif-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 16px; }
-.exif-title { font-size: 0.7rem; font-weight: 600; color: var(--gold); letter-spacing: 2px; margin-bottom: 12px; }
-.exif-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.exif-item { text-align: center; }
-.exif-value { font-size: 0.88rem; font-weight: 700; color: var(--text); }
-.exif-label { font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.exif-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.exif-title { font-size: 0.62rem; font-weight: 600; color: var(--gold); letter-spacing: 1.5px; white-space: nowrap; }
+.exif-grid { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.exif-item { display: flex; flex-direction: column; align-items: center; }
+.exif-value { font-size: 0.78rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+.exif-label { font-size: 0.55rem; color: var(--text-dim); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* EXIF PREVIEW ON UPLOAD */
 .exif-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-top: 14px; font-size: 0.78rem; color: var(--text-mid); display: flex; gap: 12px; flex-wrap: wrap; }
@@ -143,7 +143,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .exif-preview-lbl { font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; }
 
 /* CRITIQUE */
-.critique-section { margin-top: 20px; }
+.critique-section { margin-top: 12px; }
 .critique-title { font-size: 0.7rem; font-weight: 600; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .critique-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .critique-label { font-size: 0.82rem; color: var(--text-mid); width: 90px; flex-shrink: 0; }
@@ -156,7 +156,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .overall-max { font-size: 0.78rem; color: var(--text-dim); }
 
 /* RATE SECTION */
-.rate-section { margin-top: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.rate-section { margin-top: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
 .rate-section-title { font-size: 0.7rem; font-weight: 600; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 14px; text-transform: uppercase; }
 .critique-inputs { display: flex; flex-direction: column; gap: 12px; }
 .critique-input-row { display: flex; align-items: center; gap: 8px; }
@@ -167,7 +167,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .submit-critique-btn { width: 100%; margin-top: 14px; padding: 12px; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); border: none; border-radius: 10px; color: #0a0a0b; font-size: 0.85rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; }
 
 /* COMMENTS */
-.comments-section { margin-top: 20px; }
+.comments-section { margin-top: 12px; }
 .comments-title { font-size: 0.7rem; font-weight: 600; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 14px; }
 .comment-item { display: flex; gap: 10px; margin-bottom: 14px; }
 .comment-item-avatar { width: 30px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, var(--gold-dim), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 700; color: #0a0a0b; flex-shrink: 0; overflow: hidden; }
