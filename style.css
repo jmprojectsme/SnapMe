@@ -107,7 +107,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 /* ================================
    PHOTO DETAIL
    ================================ */
-#photo-detail { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 100%; background: var(--bg); z-index: 150; overflow-y: auto; flex-direction: column; display: none; }
+#photo-detail { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 100%; background: var(--bg); z-index: 400; overflow-y: auto; flex-direction: column; display: none; }
 #photo-detail.open { display: flex; }
 .detail-header { display: flex; align-items: center; justify-content: space-between; padding: 50px 16px 14px; position: sticky; top: 0; background: var(--bg); z-index: 10; border-bottom: 1px solid var(--border); }
 .detail-back { background: none; border: none; color: var(--text); font-size: 1.3rem; cursor: pointer; padding: 4px 8px; }

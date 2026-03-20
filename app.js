@@ -232,6 +232,12 @@ window.openPhotoDetail = async function(postId) {
     document.getElementById('exifCard').style.display = 'none'
   }
 
+  // Open detail page FIRST before any async calls
+  const detail = document.getElementById('photo-detail')
+  detail.classList.add('open')
+  detail.scrollTop = 0
+  document.body.style.overflow = 'hidden'
+
   // Load critiques — wrapped in try/catch
   try { await loadCritiques(post.id) } catch(e) { console.log('critiques error', e) }
 
@@ -239,31 +245,30 @@ window.openPhotoDetail = async function(postId) {
   const rateSection = document.getElementById('rateSection')
   if (!isOwnPost && currentUser && !isGuest) {
     rateSection.style.display = 'block'
-    const { data: existing } = await supabase
-      .from('critiques')
-      .select('*')
-      .eq('post_id', post.id)
-      .eq('user_id', currentUser.id)
-      .single()
+    try {
+      const { data: existing } = await supabase
+        .from('critiques')
+        .select('*')
+        .eq('post_id', post.id)
+        .eq('user_id', currentUser.id)
+        .single()
 
-    if (existing) {
-      critiqueRatings = { composition: existing.composition, lighting: existing.lighting, editing: existing.editing }
-    } else {
+      if (existing) {
+        critiqueRatings = { composition: existing.composition, lighting: existing.lighting, editing: existing.editing }
+      } else {
+        critiqueRatings = { composition: 0, lighting: 0, editing: 0 }
+      }
+      renderCritiqueInputs()
+    } catch(e) { 
       critiqueRatings = { composition: 0, lighting: 0, editing: 0 }
+      renderCritiqueInputs()
     }
-    renderCritiqueInputs()
   } else {
     rateSection.style.display = 'none'
   }
 
   // Load comments — wrapped in try/catch so errors don't block opening
   try { await loadComments(post.id) } catch(e) { console.log('comments error', e) }
-
-  // Always open the detail page regardless of errors above
-  const detail = document.getElementById('photo-detail')
-  detail.classList.add('open')
-  detail.scrollTop = 0
-  document.body.style.overflow = 'hidden'
 }
 
 window.closePhotoDetail = function() {
@@ -856,7 +861,6 @@ function renderCard(post, scores) {
   const avgScore  = scores && scores.length ? (scores.reduce((s, v) => s + v, 0) / scores.length).toFixed(1) : null
   const avatarContent = post.avatar_url ? `<img src="${post.avatar_url}">` : getInitials(username)
 
-  // EXIF overlay text
   let exifText = '📱 Phone'
   if (post.exif_data && post.exif_data.Aperture) {
     const parts = []
@@ -866,19 +870,19 @@ function renderCard(post, scores) {
   }
 
   return `
-  <div class="card" onclick="openPhotoDetail('${post.id}')">
-    <div class="card-photo">
+  <div class="card" id="card-${post.id}">
+    <div class="card-photo" onclick="openPhotoDetail('${post.id}')">
       <img src="${post.image_url}" alt="photo" loading="lazy">
       ${post.category ? `<div class="card-overlay-left">${post.category}</div>` : ''}
       <div class="card-overlay-right">${exifText}</div>
       ${avgScore ? `<div class="card-score-badge">★ ${avgScore}</div>` : ''}
     </div>
     <div class="card-footer">
-      <div class="card-footer-user">
+      <div class="card-footer-user" onclick="openPhotoDetail('${post.id}')">
         <div class="card-footer-avatar">${avatarContent}</div>
         <div class="card-footer-username">${username}</div>
       </div>
-      <div class="card-footer-actions" onclick="event.stopPropagation()">
+      <div class="card-footer-actions">
         ${!isOwnPost ? `
         <button class="card-action ${liked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="likePost('${post.id}')">
           <svg viewBox="0 0 24 24" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8">
@@ -893,7 +897,7 @@ function renderCard(post, scores) {
           <span>${post.likes || 0}</span>
         </div>`}
         <button class="card-action" onclick="openPhotoDetail('${post.id}')">💬</button>
-        ${isOwnPost ? `<button class="card-action" onclick="event.stopPropagation(); deletePost('${post.id}')">🗑️</button>` : ''}
+        ${isOwnPost ? `<button class="card-action" onclick="deletePost('${post.id}')">🗑️</button>` : ''}
       </div>
     </div>
   </div>`
