@@ -176,7 +176,6 @@ window.openPhotoDetail = async function(postId) {
   document.getElementById('detailCategory').textContent = post.category || ''
   document.getElementById('detailCategory').style.display = post.category ? 'block' : 'none'
   document.getElementById('detailUsername').textContent = post.username || 'snapme user'
-  document.getElementById('detailCaption').textContent = ''
   const captionFull = document.getElementById('detailCaptionFull')
   if (captionFull) {
     captionFull.textContent = post.caption || ''
