@@ -260,13 +260,13 @@ window.openPhotoDetail = async function(postId) {
   await loadComments(post.id)
 
   const detail = document.getElementById('photo-detail')
-  detail.style.display = 'flex'
+  detail.classList.add('open')
   detail.scrollTop = 0
   document.body.style.overflow = 'hidden'
 }
 
 window.closePhotoDetail = function() {
-  document.getElementById('photo-detail').style.display = 'none'
+  document.getElementById('photo-detail').classList.remove('open')
   document.body.style.overflow = ''
   currentDetailPost = null
 }
