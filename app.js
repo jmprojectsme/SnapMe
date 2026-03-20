@@ -158,8 +158,16 @@ window.showGuidelinesFromDrawer = function() {
 // ================================
 
 window.openPhotoDetail = async function(postId) {
-  const post = allPosts.find(p => p.id === postId) || explorePosts.find(p => p.id === postId)
-  if (!post) return
+  let post = allPosts.find(p => p.id === postId) || explorePosts.find(p => p.id === postId)
+  
+  // If not in memory fetch from database directly
+  if (!post) {
+    const { data } = await supabase.from('posts').select('*').eq('id', postId).single()
+    if (!data) { showToast('Photo not found', 'error'); return }
+    post = data
+    allPosts.push(post)
+  }
+  
   currentDetailPost = post
 
   const isOwnPost = currentUser && post.user_id === currentUser.id
