@@ -45,8 +45,11 @@ function getInitials(name) {
 // IMAGE COMPRESSION
 // ================================
 
-function compressImage(file, maxWidth = 1280, quality = 0.75) {
+function compressImage(file, maxWidth = 1080, quality = 0.7) {
   return new Promise((resolve) => {
+    // Skip compression for small files under 500KB
+    if (file.size < 500000) { resolve(file); return }
+    
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
@@ -775,7 +778,12 @@ window.doSignup = async function() {
 window.doLogout = async function() {
   closeDrawer()
   await supabase.auth.signOut()
+  currentUser = null
+  currentProfile = null
+  isGuest = false
+  allPosts = []
   showToast('Signed out!', 'success')
+  setTimeout(() => showAuthScreen(), 500)
 }
 
 window.doSetupProfile = async function() {
