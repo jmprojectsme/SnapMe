@@ -232,8 +232,8 @@ window.openPhotoDetail = async function(postId) {
     document.getElementById('exifCard').style.display = 'none'
   }
 
-  // Load critiques
-  await loadCritiques(post.id)
+  // Load critiques — wrapped in try/catch
+  try { await loadCritiques(post.id) } catch(e) { console.log('critiques error', e) }
 
   // Rate section
   const rateSection = document.getElementById('rateSection')
@@ -256,9 +256,10 @@ window.openPhotoDetail = async function(postId) {
     rateSection.style.display = 'none'
   }
 
-  // Load comments
-  await loadComments(post.id)
+  // Load comments — wrapped in try/catch so errors don't block opening
+  try { await loadComments(post.id) } catch(e) { console.log('comments error', e) }
 
+  // Always open the detail page regardless of errors above
   const detail = document.getElementById('photo-detail')
   detail.classList.add('open')
   detail.scrollTop = 0
