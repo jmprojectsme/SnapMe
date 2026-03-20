@@ -477,12 +477,12 @@ window.detailLike = async function() {
 
 window.deleteCurrentPost = async function() {
   if (!currentDetailPost || !currentUser) return
-  if (currentDetailPost.user_id !== currentUser.id) { showToast('You can only delete your own photos', 'error'); return }
   if (!confirm('Delete this photo?')) return
-  await supabase.from('posts').delete().eq('id', currentDetailPost.id)
+  const { error } = await supabase.from('posts').delete().eq('id', currentDetailPost.id).eq('user_id', currentUser.id)
+  if (error) { showToast('Could not delete. Not your photo.', 'error'); return }
   allPosts = allPosts.filter(p => p.id !== currentDetailPost.id)
   closePhotoDetail()
-  showToast('Photo deleted', 'success')
+  showToast('Photo deleted ✅', 'success')
   loadFeed()
 }
 
@@ -904,12 +904,12 @@ function renderCard(post, scores) {
 }
 
 window.deletePost = async function(id) {
-  const post = allPosts.find(p => p.id === id)
-  if (!post || !currentUser || post.user_id !== currentUser.id) { showToast('You can only delete your own photos', 'error'); return }
+  if (!currentUser) { showToast('Sign in first', 'error'); return }
   if (!confirm('Delete this photo?')) return
-  await supabase.from('posts').delete().eq('id', id)
+  const { error } = await supabase.from('posts').delete().eq('id', id).eq('user_id', currentUser.id)
+  if (error) { showToast('Could not delete. Not your photo.', 'error'); return }
   allPosts = allPosts.filter(p => p.id !== id)
-  showToast('Photo deleted', 'success')
+  showToast('Photo deleted ✅', 'success')
   loadFeed()
 }
 
