@@ -45,7 +45,7 @@ function getInitials(name) {
 // IMAGE COMPRESSION
 // ================================
 
-function compressImage(file, maxWidth = 1920, quality = 0.82) {
+function compressImage(file, maxWidth = 1280, quality = 0.75) {
   return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -168,7 +168,12 @@ window.openPhotoDetail = async function(postId) {
   document.getElementById('detailCategory').textContent = post.category || ''
   document.getElementById('detailCategory').style.display = post.category ? 'block' : 'none'
   document.getElementById('detailUsername').textContent = post.username || 'snapme user'
-  document.getElementById('detailCaption').textContent = post.caption || ''
+  document.getElementById('detailCaption').textContent = ''
+  const captionFull = document.getElementById('detailCaptionFull')
+  if (captionFull) {
+    captionFull.textContent = post.caption || ''
+    captionFull.style.display = post.caption ? 'block' : 'none'
+  }
   document.getElementById('detailLikeCount').textContent = post.likes || 0
   document.getElementById('detailCommentCount').textContent = 0
 

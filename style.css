@@ -736,3 +736,14 @@ nav { width: 100%; max-width: 480px; display: flex; align-items: center; justify
   display: block;
   margin-top: 3px;
 }
+
+/* Full width caption below user row */
+.detail-caption-full {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  line-height: 1.6;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border);
+  word-break: break-word;
+  display: none;
+}
