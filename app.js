@@ -234,7 +234,8 @@ window.openPhotoDetail = async function(postId) {
 
   // Open detail page FIRST before any async calls
   const detail = document.getElementById('photo-detail')
-  detail.classList.add('open')
+  detail.style.display = 'flex'
+  detail.style.flexDirection = 'column'
   detail.scrollTop = 0
   document.body.style.overflow = 'hidden'
 
@@ -272,7 +273,7 @@ window.openPhotoDetail = async function(postId) {
 }
 
 window.closePhotoDetail = function() {
-  document.getElementById('photo-detail').classList.remove('open')
+  document.getElementById('photo-detail').style.display = 'none'
   document.body.style.overflow = ''
   currentDetailPost = null
 }
