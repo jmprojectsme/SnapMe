@@ -246,7 +246,8 @@ window.openPhotoDetail = async function(postId) {
 
   // Rate section
   const rateSection = document.getElementById('rateSection')
-  if (!isOwnPost && currentUser && !isGuest) {
+  // Show rate section for others' posts — even if not logged in show it but prompt to login
+  if (!isOwnPost) {
     rateSection.style.display = 'block'
     try {
       const { data: existing } = await supabase
@@ -266,7 +267,7 @@ window.openPhotoDetail = async function(postId) {
       critiqueRatings = { composition: 0, lighting: 0, editing: 0 }
       renderCritiqueInputs()
     }
-  } else {
+  } else if (isOwnPost) {
     rateSection.style.display = 'none'
   }
 
